@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -18,7 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
-export default function ChatPage() {
+function ChatContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -336,5 +336,19 @@ export default function ChatPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center bg-surface-primary text-text-primary">
+          <span className="animate-spin h-8 w-8 border-2 border-brand-primary border-t-transparent rounded-full" />
+        </div>
+      }
+    >
+      <ChatContent />
+    </Suspense>
   );
 }
