@@ -1,8 +1,9 @@
-import { router, publicProcedure } from "../trpc";
+import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { sendOtp as sendOtpService } from "@/lib/otp";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { TRPCError } from "@trpc/server";
+import { User } from "@/lib/models";
 
 export const authRouter = router({
   /**
@@ -40,5 +41,54 @@ export const authRouter = router({
 
       const result = await sendOtpService(phone);
       return result;
+    }),
+
+  /**
+   * Get currently logged-in user profile
+   */
+  getProfile: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userId = ctx.session.userId;
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const user = await User.findByPk(userId);
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      return {
+        id: user.id,
+        phone: user.phone,
+        name: user.name || "",
+        email: user.email || "",
+        role: user.role,
+      };
+    }),
+
+  /**
+   * Update logged-in user profile
+   */
+  updateProfile: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(2).max(100),
+        email: z.string().email().optional().or(z.literal("")),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const updates: any = { name: input.name };
+      if (input.email !== undefined) {
+        updates.email = input.email === "" ? null : input.email;
+      }
+
+      await User.update(updates, { where: { id: userId } });
+      return { success: true };
     }),
 });

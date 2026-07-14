@@ -3,6 +3,7 @@ import { z } from "zod";
 import { LocalEvent, User, EVENT_CATEGORIES } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
 import { Op } from "sequelize";
+import { containsProfanityOrSpam } from "@/lib/moderation";
 
 export const eventsRouter = router({
   /**
@@ -25,6 +26,17 @@ export const eventsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
       if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      if (
+        containsProfanityOrSpam(input.title) ||
+        containsProfanityOrSpam(input.description) ||
+        containsProfanityOrSpam(input.venue)
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Your event details were flagged by our safety filters. Please revise the content.",
+        });
+      }
 
       const event = await LocalEvent.create({
         userId,

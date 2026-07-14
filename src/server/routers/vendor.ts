@@ -3,6 +3,8 @@ import { z } from "zod";
 import { VENDOR_CATEGORIES, Vendor, User } from "@/lib/models";
 import { uploadFile } from "@/lib/storage";
 import { TRPCError } from "@trpc/server";
+import { indexVendors } from "@/lib/meilisearch";
+import { containsProfanityOrSpam } from "@/lib/moderation";
 
 export const vendorRouter = router({
   /**
@@ -26,6 +28,16 @@ export const vendorRouter = router({
       const userId = ctx.session.userId;
       if (!userId) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      if (
+        containsProfanityOrSpam(input.businessName) ||
+        (input.description && containsProfanityOrSpam(input.description))
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Your registration details were flagged by our safety filters. Please revise the content.",
+        });
       }
 
       // Check if vendor already exists
@@ -121,6 +133,16 @@ export const vendorRouter = router({
         throw new TRPCError({ code: "UNAUTHORIZED" });
       }
 
+      if (
+        (input.businessName && containsProfanityOrSpam(input.businessName)) ||
+        (input.description && containsProfanityOrSpam(input.description))
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Your profile details were flagged by our safety filters. Please revise the content.",
+        });
+      }
+
       // Verify vendor ownership
       const vendor = await Vendor.findOne({ where: { id: input.vendorId, userId } });
       if (!vendor) {
@@ -138,6 +160,31 @@ export const vendorRouter = router({
       if (input.workingHours !== undefined) updates.workingHours = input.workingHours;
 
       await Vendor.update(updates, { where: { id: input.vendorId } });
+
+      // If the vendor is verified, update the Meilisearch index as well
+      const updatedVendor = await Vendor.findByPk(input.vendorId);
+      if (updatedVendor && updatedVendor.verificationTier !== "UNVERIFIED") {
+        try {
+          await indexVendors([
+            {
+              id: updatedVendor.id,
+              businessName: updatedVendor.businessName,
+              description: updatedVendor.description,
+              category: updatedVendor.category,
+              verificationTier: updatedVendor.verificationTier,
+              ratingAvg: updatedVendor.ratingAvg,
+              ratingCount: updatedVendor.ratingCount,
+              _geo: {
+                lat: updatedVendor.lat,
+                lng: updatedVendor.lng,
+              },
+            },
+          ]);
+          console.log(`✅ Synced updated vendor ${updatedVendor.id} to Meilisearch`);
+        } catch (meiliError) {
+          console.error("⚠️ Failed to sync vendor updates to Meilisearch:", meiliError);
+        }
+      }
 
       return { success: true };
     }),

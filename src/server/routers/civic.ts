@@ -4,6 +4,7 @@ import { CivicReport, User } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
 import { haversineDistance } from "@/lib/utils";
 import { Op } from "sequelize";
+import { containsProfanityOrSpam } from "@/lib/moderation";
 
 export const civicRouter = router({
   /**
@@ -24,6 +25,13 @@ export const civicRouter = router({
       const userId = ctx.session.userId;
       if (!userId) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      if (input.description && containsProfanityOrSpam(input.description)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Your description was flagged by our safety filters. Please revise the content.",
+        });
       }
 
       const report = await CivicReport.create({

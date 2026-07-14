@@ -210,6 +210,14 @@ export function Navbar() {
                         {/* Menu items */}
                         <div className="py-1">
                           <Link
+                            href="/profile"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors font-semibold border-b border-white/5"
+                          >
+                            <User className="h-4 w-4 text-brand-primary" />
+                            <span>My Profile</span>
+                          </Link>
+                          <Link
                             href={session.user.role === "VENDOR" ? "/vendor/dashboard" : "/bookings"}
                             onClick={() => setIsProfileOpen(false)}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
