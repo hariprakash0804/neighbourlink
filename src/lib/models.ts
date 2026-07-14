@@ -432,10 +432,14 @@ export class CivicReport extends Model<InferAttributes<CivicReport>, InferCreati
   declare lat: number;
   declare lng: number;
   declare category: string;
+  declare description: CreationOptional<string | null>;
   declare photoUrl: CreationOptional<string | null>;
   declare status: CreationOptional<string>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare reporter?: User;
 }
 
 CivicReport.init(
@@ -461,6 +465,10 @@ CivicReport.init(
       type: DataTypes.STRING(50),
       allowNull: false,
       comment: "pothole, garbage, streetlight, etc.",
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
     photoUrl: {
       type: DataTypes.STRING(500),
@@ -587,6 +595,128 @@ User.hasMany(ChatMessage, { foreignKey: "senderId", as: "sentMessages" });
 User.hasMany(ChatMessage, { foreignKey: "recipientId", as: "receivedMessages" });
 ChatMessage.belongsTo(User, { foreignKey: "senderId", as: "sender" });
 ChatMessage.belongsTo(User, { foreignKey: "recipientId", as: "recipient" });
+
+// ─── Bulletin Post ────────────────────────────────────────────────────────────
+export const BULLETIN_CATEGORIES = ["ANNOUNCEMENT", "LOST_FOUND", "GARAGE_SALE", "GENERAL"] as const;
+export type BulletinCategory = (typeof BULLETIN_CATEGORIES)[number];
+
+export class BulletinPost extends Model<InferAttributes<BulletinPost>, InferCreationAttributes<BulletinPost>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare category: BulletinCategory;
+  declare title: string;
+  declare content: string;
+  declare photoUrl: CreationOptional<string | null>;
+  declare lat: CreationOptional<number | null>;
+  declare lng: CreationOptional<number | null>;
+  declare expiresAt: CreationOptional<Date | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare author?: User;
+}
+
+BulletinPost.init(
+  {
+    id: { type: DataTypes.STRING(50), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+    userId: { type: DataTypes.STRING(50), allowNull: false },
+    category: { type: DataTypes.STRING(30), allowNull: false, defaultValue: "GENERAL" },
+    title: { type: DataTypes.STRING(255), allowNull: false },
+    content: { type: DataTypes.TEXT, allowNull: false },
+    photoUrl: { type: DataTypes.TEXT, allowNull: true },
+    lat: { type: DataTypes.DOUBLE, allowNull: true },
+    lng: { type: DataTypes.DOUBLE, allowNull: true },
+    expiresAt: { type: DataTypes.DATE, allowNull: true },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "BulletinPost", tableName: "bulletin_posts" }
+);
+
+User.hasMany(BulletinPost, { foreignKey: "userId", as: "bulletinPosts" });
+BulletinPost.belongsTo(User, { foreignKey: "userId", as: "author" });
+
+// ─── Local Event ──────────────────────────────────────────────────────────────
+export const EVENT_CATEGORIES = ["FESTIVAL", "MEETING", "NOTICE", "OTHER"] as const;
+export type EventCategory = (typeof EVENT_CATEGORIES)[number];
+
+export class LocalEvent extends Model<InferAttributes<LocalEvent>, InferCreationAttributes<LocalEvent>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare title: string;
+  declare description: string;
+  declare venue: string;
+  declare lat: CreationOptional<number | null>;
+  declare lng: CreationOptional<number | null>;
+  declare startDate: Date;
+  declare endDate: CreationOptional<Date | null>;
+  declare category: EventCategory;
+  declare photoUrl: CreationOptional<string | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare author?: User;
+}
+
+LocalEvent.init(
+  {
+    id: { type: DataTypes.STRING(50), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+    userId: { type: DataTypes.STRING(50), allowNull: false },
+    title: { type: DataTypes.STRING(255), allowNull: false },
+    description: { type: DataTypes.TEXT, allowNull: false },
+    venue: { type: DataTypes.STRING(255), allowNull: false },
+    lat: { type: DataTypes.DOUBLE, allowNull: true },
+    lng: { type: DataTypes.DOUBLE, allowNull: true },
+    startDate: { type: DataTypes.DATE, allowNull: false },
+    endDate: { type: DataTypes.DATE, allowNull: true },
+    category: { type: DataTypes.STRING(30), allowNull: false, defaultValue: "OTHER" },
+    photoUrl: { type: DataTypes.TEXT, allowNull: true },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "LocalEvent", tableName: "local_events" }
+);
+
+User.hasMany(LocalEvent, { foreignKey: "userId", as: "localEvents" });
+LocalEvent.belongsTo(User, { foreignKey: "userId", as: "author" });
+
+// ─── SOS Alert ────────────────────────────────────────────────────────────────
+export class SosAlert extends Model<InferAttributes<SosAlert>, InferCreationAttributes<SosAlert>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare lat: number;
+  declare lng: number;
+  declare message: CreationOptional<string | null>;
+  declare contactsNotified: CreationOptional<object | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare user?: User;
+}
+
+SosAlert.init(
+  {
+    id: { type: DataTypes.STRING(50), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+    userId: { type: DataTypes.STRING(50), allowNull: false },
+    lat: { type: DataTypes.DOUBLE, allowNull: false },
+    lng: { type: DataTypes.DOUBLE, allowNull: false },
+    message: { type: DataTypes.TEXT, allowNull: true },
+    contactsNotified: { type: DataTypes.JSON, allowNull: true },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "SosAlert", tableName: "sos_alerts" }
+);
+
+User.hasMany(SosAlert, { foreignKey: "userId", as: "sosAlerts" });
+SosAlert.belongsTo(User, { foreignKey: "userId", as: "user" });
+
+// Add CivicReport associations
+User.hasMany(CivicReport, { foreignKey: "userId", as: "civicReports" });
+CivicReport.belongsTo(User, { foreignKey: "userId", as: "reporter" });
 
 // ─── Sync helper (dev only) ──────────────────────────────────────────────────
 export async function syncDatabase(force = false) {

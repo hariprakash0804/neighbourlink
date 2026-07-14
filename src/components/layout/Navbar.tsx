@@ -80,6 +80,22 @@ export function Navbar() {
               </span>
             </Link>
 
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center gap-1">
+              <Link
+                href="/directory"
+                className="px-3.5 py-1.5 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-full transition-all"
+              >
+                Directory
+              </Link>
+              <Link
+                href="/community"
+                className="px-3.5 py-1.5 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-full transition-all"
+              >
+                Community Hub
+              </Link>
+            </div>
+
             {/* Location Switcher — Glass dropdown */}
             <div className="relative hidden md:block">
               <button
@@ -213,6 +229,14 @@ export function Navbar() {
                             <MapPin className="h-4 w-4" />
                             <span>My Addresses</span>
                           </button>
+                          <Link
+                            href="/community"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                          >
+                            <MessageSquare className="h-4 w-4 text-brand-primary" />
+                            <span>Community Hub</span>
+                          </Link>
                           <Link
                             href="/chat"
                             onClick={() => setIsProfileOpen(false)}

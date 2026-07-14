@@ -9,6 +9,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
+import { SosButton } from "@/components/sos/SosButton";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -83,6 +84,9 @@ export default function RootLayout({
 
                 {/* Mobile bottom nav */}
                 <MobileBottomNav />
+
+                {/* Global floating emergency SOS Alert button */}
+                <SosButton />
               </div>
             </TRPCProvider>
           </ThemeProvider>

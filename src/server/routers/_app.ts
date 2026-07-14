@@ -9,6 +9,9 @@ import { reportRouter } from "./report";
 import { adminRouter } from "./admin";
 import { chatRouter } from "./chat";
 import { civicRouter } from "./civic";
+import { bulletinRouter } from "./bulletin";
+import { eventsRouter } from "./events";
+import { sosRouter } from "./sos";
 
 export const appRouter = router({
   auth: authRouter,
@@ -21,6 +24,9 @@ export const appRouter = router({
   admin: adminRouter,
   chat: chatRouter,
   civic: civicRouter,
+  bulletin: bulletinRouter,
+  events: eventsRouter,
+  sos: sosRouter,
 });
 
 export type AppRouter = typeof appRouter;

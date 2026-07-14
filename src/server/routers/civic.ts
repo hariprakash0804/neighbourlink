@@ -1,5 +1,9 @@
 import { router, protectedProcedure, publicProcedure } from "../trpc";
 import { z } from "zod";
+import { CivicReport, User } from "@/lib/models";
+import { TRPCError } from "@trpc/server";
+import { haversineDistance } from "@/lib/utils";
+import { Op } from "sequelize";
 
 export const civicRouter = router({
   /**
@@ -12,12 +16,27 @@ export const civicRouter = router({
         lat: z.number(),
         lng: z.number(),
         category: z.string().min(1),
+        description: z.string().min(5).max(1000).optional(),
         photoUrl: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
-      // TODO: Phase 8
-      return { success: true, reportId: "stub-id" };
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const report = await CivicReport.create({
+        userId,
+        lat: input.lat,
+        lng: input.lng,
+        category: input.category,
+        description: input.description || null,
+        photoUrl: input.photoUrl || null,
+        status: "OPEN",
+      });
+
+      return { success: true, reportId: report.id };
     }),
 
   /**
@@ -33,7 +52,59 @@ export const civicRouter = router({
       })
     )
     .query(async ({ input }) => {
-      // TODO: Phase 8
-      return { reports: [], total: 0 };
+      // Get all reports, then filter by distance in memory
+      const allReports = await CivicReport.findAll({
+        include: [
+          {
+            model: User,
+            as: "reporter",
+            attributes: ["id", "name"],
+          },
+        ],
+        order: [["createdAt", "DESC"]],
+        limit: 200,
+      });
+
+      const nearbyReports = allReports
+        .map((r) => {
+          const dist = haversineDistance(input.lat, input.lng, r.lat, r.lng);
+          return {
+            id: r.id,
+            userId: r.userId,
+            lat: r.lat,
+            lng: r.lng,
+            category: r.category,
+            description: (r as any).description || null,
+            photoUrl: r.photoUrl,
+            status: r.status,
+            createdAt: r.createdAt.toISOString(),
+            reporterName: r.reporter?.name || "Resident",
+            distanceM: Math.round(dist),
+          };
+        })
+        .filter((r) => r.distanceM <= input.radius)
+        .sort((a, b) => a.distanceM - b.distanceM);
+
+      return { reports: nearbyReports, total: nearbyReports.length };
+    }),
+
+  /**
+   * Update civic report status (admin or reporter)
+   */
+  updateStatus: protectedProcedure
+    .input(
+      z.object({
+        reportId: z.string(),
+        status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED"]),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const report = await CivicReport.findByPk(input.reportId);
+      if (!report) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Civic report not found" });
+      }
+
+      await report.update({ status: input.status });
+      return { success: true };
     }),
 });
