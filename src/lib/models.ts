@@ -215,7 +215,15 @@ Vendor.init(
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
   },
-  { sequelize, modelName: "Vendor", tableName: "vendors" }
+  {
+    sequelize,
+    modelName: "Vendor",
+    tableName: "vendors",
+    indexes: [
+      { fields: ["lat", "lng"] },
+      { fields: ["userId"] },
+    ],
+  }
 );
 
 // ─── Essential Service ────────────────────────────────────────────────────────
@@ -277,7 +285,15 @@ EssentialService.init(
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
   },
-  { sequelize, modelName: "EssentialService", tableName: "essential_services" }
+  {
+    sequelize,
+    modelName: "EssentialService",
+    tableName: "essential_services",
+    indexes: [
+      { fields: ["lat", "lng"] },
+      { fields: ["category"] },
+    ],
+  }
 );
 
 // ─── Booking ──────────────────────────────────────────────────────────────────
@@ -482,7 +498,14 @@ CivicReport.init(
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
   },
-  { sequelize, modelName: "CivicReport", tableName: "civic_reports" }
+  {
+    sequelize,
+    modelName: "CivicReport",
+    tableName: "civic_reports",
+    indexes: [
+      { fields: ["lat", "lng"] },
+    ],
+  }
 );
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────
