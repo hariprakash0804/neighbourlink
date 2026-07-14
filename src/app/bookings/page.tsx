@@ -13,6 +13,8 @@ import {
   HelpCircle,
   ArrowRight,
   Sparkles,
+  Star,
+  Send,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -26,6 +28,19 @@ export default function ResidentBookingsPage() {
 
   const { data: data, isLoading, refetch } = trpc.booking.listForResident.useQuery();
   const updateBookingStatus = trpc.booking.updateStatus.useMutation();
+
+  // Review state
+  const [reviewingBookingId, setReviewingBookingId] = useState<string | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewHover, setReviewHover] = useState(0);
+  const submitReview = trpc.review.create.useMutation({
+    onSuccess: () => {
+      setReviewingBookingId(null);
+      setReviewRating(0);
+      setReviewComment("");
+    },
+  });
 
   const handleCancelBooking = async (bookingId: string) => {
     if (!confirm("Are you sure you want to cancel this booking request?")) return;
@@ -274,7 +289,103 @@ export default function ResidentBookingsPage() {
                         <span>Chat with Vendor</span>
                       </button>
                     )}
+
+                    {b.status === "COMPLETED" && b.vendor?.id && (
+                      <button
+                        onClick={() => {
+                          setReviewingBookingId(reviewingBookingId === b.id ? null : b.id);
+                          setReviewRating(0);
+                          setReviewComment("");
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-xs font-bold text-amber-400 py-2.5 transition-all select-none"
+                      >
+                        <Star className="h-3.5 w-3.5" />
+                        <span>Leave Review</span>
+                      </button>
+                    )}
                   </div>
+
+                  {/* Inline Review Form */}
+                  <AnimatePresence>
+                    {reviewingBookingId === b.id && b.vendor?.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden mt-3"
+                      >
+                        <div className="p-3 rounded-xl border border-amber-500/10 bg-amber-500/5 space-y-3">
+                          <p className="text-xs font-bold text-text-primary">Rate {b.vendor.businessName}</p>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setReviewRating(star)}
+                                onMouseEnter={() => setReviewHover(star)}
+                                onMouseLeave={() => setReviewHover(0)}
+                                className="transition-transform hover:scale-125"
+                              >
+                                <Star
+                                  className={cn(
+                                    "h-6 w-6 transition-colors",
+                                    star <= (reviewHover || reviewRating)
+                                      ? "fill-amber-400 text-amber-400"
+                                      : "fill-transparent text-white/20"
+                                  )}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                          <textarea
+                            value={reviewComment}
+                            onChange={(e) => setReviewComment(e.target.value)}
+                            placeholder="Share your experience (optional)..."
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-brand-primary/50 resize-none"
+                            rows={2}
+                            maxLength={2000}
+                          />
+                          {submitReview.error && (
+                            <p className="text-xs text-red-400">{submitReview.error.message}</p>
+                          )}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                if (reviewRating === 0 || !b.vendor?.id) return;
+                                submitReview.mutate({
+                                  vendorId: b.vendor.id,
+                                  rating: reviewRating,
+                                  comment: reviewComment.trim() || undefined,
+                                });
+                              }}
+                              disabled={reviewRating === 0 || submitReview.isPending}
+                              className={cn(
+                                "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all",
+                                reviewRating > 0
+                                  ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md hover:brightness-110"
+                                  : "bg-white/5 text-text-secondary cursor-not-allowed"
+                              )}
+                            >
+                              {submitReview.isPending ? (
+                                <span className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full" />
+                              ) : (
+                                <>
+                                  <Send className="h-3 w-3" />
+                                  Submit
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => setReviewingBookingId(null)}
+                              className="px-3 py-2 rounded-xl text-xs font-bold text-text-secondary border border-white/10 hover:bg-white/5 transition-all"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               );
             })}

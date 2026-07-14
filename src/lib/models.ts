@@ -339,6 +339,10 @@ export class Review extends Model<InferAttributes<Review>, InferCreationAttribut
   declare comment: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare user?: User;
+  declare vendor?: Vendor;
 }
 
 Review.init(

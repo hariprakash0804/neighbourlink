@@ -211,4 +211,40 @@ export const directoryRouter = router({
         provider: "database",
       };
     }),
+
+  /**
+   * Get a single vendor by ID (for detail page)
+   * Implementation: Phase 6
+   */
+  getVendorById: publicProcedure
+    .input(z.object({ vendorId: z.string() }))
+    .query(async ({ input }) => {
+      const vendor = await Vendor.findByPk(input.vendorId, {
+        include: [{ model: User, as: "user", attributes: ["phone", "name"] }],
+      });
+
+      if (!vendor) {
+        return { vendor: null };
+      }
+
+      return {
+        vendor: {
+          id: vendor.id,
+          userId: vendor.userId,
+          category: vendor.category,
+          businessName: vendor.businessName,
+          description: vendor.description,
+          lat: vendor.lat,
+          lng: vendor.lng,
+          serviceRadiusM: vendor.serviceRadiusM,
+          priceInfo: vendor.priceInfo,
+          workingHours: vendor.workingHours,
+          verificationTier: vendor.verificationTier,
+          ratingAvg: vendor.ratingAvg,
+          ratingCount: vendor.ratingCount,
+          responseTimeMin: vendor.responseTimeMin,
+          phone: vendor.user?.phone || null,
+        },
+      };
+    }),
 });

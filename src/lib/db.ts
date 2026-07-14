@@ -41,6 +41,14 @@ export async function ensureDbSync() {
         // Seed sample data if table is empty
         const { seedEssentialServices } = await import("./seed");
         await seedEssentialServices();
+
+        // Initialize BullMQ review queue (non-blocking)
+        try {
+          const { initReviewQueue } = await import("./queue");
+          initReviewQueue();
+        } catch (queueErr) {
+          console.warn("⚠️ BullMQ queue initialization skipped:", queueErr);
+        }
       } catch (error) {
         console.error("❌ Database sync failed:", error);
         syncPromise = null; // Allow retry on failure

@@ -568,6 +568,12 @@ function DirectoryContent() {
                             <span>Chat</span>
                           </button>
                         </div>
+                        <button
+                          onClick={() => router.push(`/vendor/${item.id}`)}
+                          className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-white/5 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all select-none"
+                        >
+                          View Profile & Reviews →
+                        </button>
                       </div>
                     </motion.div>
                   );
