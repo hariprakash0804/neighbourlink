@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Review, Vendor, User } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
 import { enqueueRatingRecompute } from "@/lib/queue";
+import { containsProfanityOrSpam } from "@/lib/moderation";
 
 export const reviewRouter = router({
   /**
@@ -48,6 +49,14 @@ export const reviewRouter = router({
         throw new TRPCError({
           code: "CONFLICT",
           message: "You have already reviewed this vendor. You can only leave one review per vendor.",
+        });
+      }
+
+      // 3.5 Content Moderation: Profanity/Spam filter
+      if (input.comment && containsProfanityOrSpam(input.comment)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Your comment was flagged by our safety filters for containing inappropriate content or spam.",
         });
       }
 

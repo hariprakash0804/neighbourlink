@@ -385,6 +385,9 @@ export class Report extends Model<InferAttributes<Report>, InferCreationAttribut
   declare status: CreationOptional<ReportStatus>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare reporter?: User;
 }
 
 Report.init(

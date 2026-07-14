@@ -241,6 +241,31 @@ function DirectoryContent() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-var(--app-nav-height)-28px)] overflow-hidden">
+      {/* Emergency Hotbar (Permanently pinned, never behind auth) */}
+      <div className="bg-red-950/40 border-b border-red-500/20 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0 select-none">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          </span>
+          <span className="font-bold text-red-400 tracking-wide uppercase">Emergency Helplines:</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-4 text-xs text-text-secondary">
+          <a href="tel:112" className="flex items-center gap-1 hover:text-red-400 transition-colors font-bold">
+            🚨 <span>National (112)</span>
+          </a>
+          <a href="tel:100" className="flex items-center gap-1 hover:text-red-400 transition-colors font-bold">
+            🚓 <span>Police (100)</span>
+          </a>
+          <a href="tel:102" className="flex items-center gap-1 hover:text-red-400 transition-colors font-bold">
+            🚑 <span>Ambulance (102)</span>
+          </a>
+          <a href="tel:101" className="flex items-center gap-1 hover:text-red-400 transition-colors font-bold">
+            🔥 <span>Fire (101)</span>
+          </a>
+        </div>
+      </div>
+
       {/* Search Header Bar */}
       <div className="glass-strong border-b border-white/10 p-4 shrink-0 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-3">

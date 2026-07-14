@@ -1,9 +1,11 @@
-import { router, publicProcedure } from "../trpc";
+import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { EssentialService, User, Vendor } from "@/lib/models";
 import { haversineDistance } from "@/lib/utils";
 import { Op } from "sequelize";
 import { getMeiliClient } from "@/lib/meilisearch";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { TRPCError } from "@trpc/server";
 
 export const directoryRouter = router({
   /**
@@ -246,5 +248,51 @@ export const directoryRouter = router({
           phone: vendor.user?.phone || null,
         },
       };
+    }),
+
+  /**
+   * Reveal the contact phone number of a vendor or service with rate-limiting (10 reveals per hour per user)
+   * Implementation: Phase 7
+   */
+  revealContact: protectedProcedure
+    .input(
+      z.object({
+        targetId: z.string(),
+        targetType: z.enum(["VENDOR", "ESSENTIAL"]),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      // Rate limit check: 10 reveals per hour (3600 seconds)
+      const rateLimitKey = `rate:reveal:${userId}`;
+      const limitResult = await checkRateLimit(rateLimitKey, 10, 3600);
+      if (!limitResult.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "You have exceeded the contact reveal limit. Please wait an hour before revealing contact info again.",
+        });
+      }
+
+      let phone: string | null = null;
+
+      if (input.targetType === "VENDOR") {
+        const vendor = await Vendor.findByPk(input.targetId, {
+          include: [{ model: User, as: "user", attributes: ["phone"] }],
+        });
+        phone = vendor?.user?.phone || null;
+      } else {
+        const service = await EssentialService.findByPk(input.targetId);
+        phone = service?.phone || null;
+      }
+
+      if (!phone) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Contact details not found" });
+      }
+
+      return { phone };
     }),
 });

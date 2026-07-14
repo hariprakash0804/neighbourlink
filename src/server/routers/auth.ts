@@ -1,6 +1,8 @@
 import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
 import { sendOtp as sendOtpService } from "@/lib/otp";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { TRPCError } from "@trpc/server";
 
 export const authRouter = router({
   /**
@@ -24,6 +26,16 @@ export const authRouter = router({
         phone = `+91${phone}`;
       } else if (!phone.startsWith("+")) {
         phone = `+${phone}`;
+      }
+
+      // Apply rate limit: 3 requests per phone per minute (60 seconds)
+      const rateLimitKey = `rate:otp:${phone}`;
+      const limitResult = await checkRateLimit(rateLimitKey, 3, 60);
+      if (!limitResult.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many OTP requests. Please wait one minute before requesting again.",
+        });
       }
 
       const result = await sendOtpService(phone);

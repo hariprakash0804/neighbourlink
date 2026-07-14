@@ -167,6 +167,16 @@ export const adminRouter = router({
         order: [["createdAt", "DESC"]],
       });
 
-      return { entries: rows, total: count };
+      return {
+        entries: rows.map((r) => ({
+          id: r.id,
+          actorId: r.actorId,
+          action: r.action,
+          targetId: r.targetId,
+          metadata: r.metadata as any,
+          createdAt: r.createdAt.toISOString(),
+        })),
+        total: count,
+      };
     }),
 });

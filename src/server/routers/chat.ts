@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ChatMessage, User, Vendor } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
 import { Op } from "sequelize";
+import { containsProfanityOrSpam } from "@/lib/moderation";
 
 export const chatRouter = router({
   /**
@@ -26,6 +27,14 @@ export const chatRouter = router({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "You cannot send messages to yourself.",
+        });
+      }
+
+      // Content Moderation: Profanity/Spam filter
+      if (containsProfanityOrSpam(input.content)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Your message was flagged by our safety filters for containing inappropriate content or spam.",
         });
       }
 

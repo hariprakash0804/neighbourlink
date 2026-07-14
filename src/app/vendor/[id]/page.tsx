@@ -17,6 +17,7 @@ import {
   Calendar,
   User as UserIcon,
   Sparkles,
+  Flag,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn, formatPhone, telLink, whatsappLink } from "@/lib/utils";
@@ -158,6 +159,22 @@ function VendorDetailContent() {
       setReviewRating(0);
       setReviewComment("");
       refetchReviews();
+    },
+  });
+
+  // Submit report mutation & states
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportSuccess, setReportSuccess] = useState(false);
+
+  const submitReport = trpc.report.create.useMutation({
+    onSuccess: () => {
+      setReportSuccess(true);
+      setReportReason("");
+      setTimeout(() => {
+        setShowReportForm(false);
+        setReportSuccess(false);
+      }, 2500);
     },
   });
 
@@ -352,7 +369,103 @@ function VendorDetailContent() {
               WhatsApp
             </a>
           )}
+          <button
+            onClick={() => {
+              if (!session?.user) {
+                setIsAuthModalOpen(true);
+              } else {
+                setShowReportForm(!showReportForm);
+              }
+            }}
+            className={cn(
+              "flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-xs font-bold transition-all border",
+              showReportForm
+                ? "bg-destructive/10 text-destructive border-destructive/30"
+                : "bg-white/5 text-text-secondary border-white/10 hover:bg-white/10"
+            )}
+          >
+            <Flag className="h-4 w-4" />
+            <span>Report</span>
+          </button>
         </div>
+
+        {/* Report Form Expander */}
+        <AnimatePresence>
+          {showReportForm && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden mt-3"
+            >
+              <div className="glass rounded-xl border border-destructive/20 p-4 space-y-4">
+                <h3 className="text-sm font-bold text-destructive flex items-center gap-1.5">
+                  <Flag className="h-4 w-4" />
+                  <span>Report this Business</span>
+                </h3>
+                
+                {reportSuccess ? (
+                  <p className="text-xs text-success font-semibold py-2">
+                    ✅ Report submitted successfully. Our safety moderators will review it shortly.
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-xs text-text-secondary leading-relaxed">
+                      Please describe why you are flagging this profile (e.g. incorrect contact info, unprofessional behavior, or fraudulent listings). Minimum 10 characters.
+                    </p>
+                    <textarea
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      placeholder="Specify your reason..."
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-destructive/50 resize-none"
+                      rows={3}
+                      maxLength={1000}
+                    />
+
+                    {submitReport.error && (
+                      <p className="text-xs text-red-400">{submitReport.error.message}</p>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (reportReason.trim().length < 10) return;
+                          submitReport.mutate({
+                            targetType: "VENDOR",
+                            targetId: vendor.id,
+                            reason: reportReason.trim(),
+                          });
+                        }}
+                        disabled={reportReason.trim().length < 10 || submitReport.isPending}
+                        className={cn(
+                          "flex-1 py-2 rounded-xl text-xs font-bold transition-all",
+                          reportReason.trim().length >= 10
+                            ? "bg-destructive text-white hover:brightness-110 shadow-md"
+                            : "bg-white/5 text-text-secondary cursor-not-allowed"
+                        )}
+                      >
+                        {submitReport.isPending ? (
+                          <span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
+                        ) : (
+                          "Submit Report"
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowReportForm(false);
+                          setReportReason("");
+                        }}
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-text-secondary border border-white/10 hover:bg-white/5 transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ─── Reviews Section ───────────────────────────────────────────── */}
