@@ -1,0 +1,438 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NEIGHBORLINK — LAYERED MORPHISM DESIGN SYSTEM
+   Glass · Neumorphism · Claymorphism · Aurora · Skeuomorphic accents
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Tailwind v4 Theme Tokens ─────────────────────────────────────────────── */
+@theme inline {
+  /* Brand colors */
+  --color-brand-primary: #6366f1;
+  --color-brand-secondary: #0ea5e9;
+  --color-brand-accent: #8b5cf6;
+
+  /* Semantic colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-verified-blue: #3b82f6;
+  --color-top-rated-gold: #f59e0b;
+
+  /* Aurora gradient stops */
+  --color-aurora-1: #6366f1;
+  --color-aurora-2: #8b5cf6;
+  --color-aurora-3: #a78bfa;
+  --color-aurora-4: #c084fc;
+  --color-aurora-5: #e879f9;
+
+  /* Surface colors — light */
+  --color-surface-primary: #ffffff;
+  --color-surface-secondary: #f8fafc;
+  --color-surface-tertiary: #f1f5f9;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+
+  /* Border radius scale */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-full: 9999px;
+
+  /* Fonts */
+  --font-heading: "Outfit", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+
+  /* Custom shadows */
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-glass-border: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+
+  --shadow-neu-raised: 6px 6px 12px #c5cdd6, -6px -6px 12px #ffffff;
+  --shadow-neu-inset: inset 4px 4px 8px #c5cdd6, inset -4px -4px 8px #ffffff;
+
+  --shadow-clay: 8px 8px 16px rgba(0, 0, 0, 0.1), inset 2px 2px 4px rgba(255, 255, 255, 0.5);
+  --shadow-clay-hover: 12px 12px 24px rgba(0, 0, 0, 0.12), inset 2px 2px 6px rgba(255, 255, 255, 0.6);
+
+  --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* ─── CSS Custom Properties ────────────────────────────────────────────────── */
+:root {
+  /* Glass morphism */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-bg-strong: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-blur: 16px;
+  --glass-blur-sm: 8px;
+  --glass-blur-lg: 24px;
+
+  /* Neumorphism base */
+  --neu-bg: #e8edf2;
+  --neu-shadow-light: #ffffff;
+  --neu-shadow-dark: #c5cdd6;
+
+  /* Clay morphism */
+  --clay-bg: linear-gradient(135deg, #f5f7fa 0%, #e4e9f0 100%);
+  --clay-radius: 24px;
+
+  /* Aurora */
+  --aurora-gradient: linear-gradient(
+    135deg,
+    var(--color-aurora-1) 0%,
+    var(--color-aurora-2) 25%,
+    var(--color-aurora-3) 50%,
+    var(--color-aurora-4) 75%,
+    var(--color-aurora-5) 100%
+  );
+
+  /* App surface */
+  --app-bg: #f8fafc;
+  --app-sidebar-bg: #ffffff;
+  --app-nav-height: 64px;
+  --app-sidebar-width: 280px;
+  --app-mobile-nav-height: 72px;
+}
+
+/* ─── Dark Mode ────────────────────────────────────────────────────────────── */
+.dark {
+  --glass-bg: rgba(15, 23, 42, 0.65);
+  --glass-bg-strong: rgba(15, 23, 42, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-blur: 12px;
+  --glass-blur-sm: 6px;
+  --glass-blur-lg: 20px;
+
+  --neu-bg: #1e293b;
+  --neu-shadow-light: #2d3a4d;
+  --neu-shadow-dark: #0f1724;
+
+  --clay-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+
+  --app-bg: #0b1120;
+  --app-sidebar-bg: #0f172a;
+
+  --color-surface-primary: #0f172a;
+  --color-surface-secondary: #1e293b;
+  --color-surface-tertiary: #2d3a4d;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-glass-border: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  --shadow-neu-raised: 6px 6px 12px #0f1724, -6px -6px 12px #2d3a4d;
+  --shadow-neu-inset: inset 4px 4px 8px #0f1724, inset -4px -4px 8px #2d3a4d;
+
+  --shadow-clay: 8px 8px 16px rgba(0, 0, 0, 0.3), inset 2px 2px 4px rgba(255, 255, 255, 0.05);
+  --shadow-clay-hover: 12px 12px 24px rgba(0, 0, 0, 0.35), inset 2px 2px 6px rgba(255, 255, 255, 0.07);
+
+  --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Base Styles ──────────────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--app-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Glassmorphism Utilities ──────────────────────────────────────────────── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass), var(--shadow-glass-border);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass), var(--shadow-glass-border);
+}
+
+.glass-subtle {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--glass-border);
+}
+
+/* ─── Neumorphism Utilities ────────────────────────────────────────────────── */
+.neu-raised {
+  background: var(--neu-bg);
+  box-shadow: var(--shadow-neu-raised);
+  border-radius: var(--radius-lg);
+}
+
+.neu-inset {
+  background: var(--neu-bg);
+  box-shadow: var(--shadow-neu-inset);
+  border-radius: var(--radius-lg);
+}
+
+.neu-button {
+  background: var(--neu-bg);
+  box-shadow: var(--shadow-neu-raised);
+  border-radius: var(--radius-full);
+  transition: box-shadow 0.2s ease, transform 0.1s ease;
+  cursor: pointer;
+}
+
+.neu-button:hover {
+  box-shadow: var(--shadow-neu-inset);
+}
+
+.neu-button:active {
+  transform: scale(0.97);
+  box-shadow: var(--shadow-neu-inset);
+}
+
+/* ─── Claymorphism Utilities ───────────────────────────────────────────────── */
+.clay-card {
+  background: var(--clay-bg);
+  box-shadow: var(--shadow-clay);
+  border-radius: var(--clay-radius);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.clay-card:hover {
+  box-shadow: var(--shadow-clay-hover);
+  transform: translateY(-2px);
+}
+
+/* ─── Aurora Background ────────────────────────────────────────────────────── */
+.aurora-bg {
+  background: var(--aurora-gradient);
+  background-size: 400% 400%;
+  animation: aurora-shift 15s ease infinite;
+}
+
+@keyframes aurora-shift {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 100% 0%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+}
+
+.aurora-mesh {
+  position: relative;
+  overflow: hidden;
+}
+
+.aurora-mesh::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 80%, rgba(192, 132, 252, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(232, 121, 249, 0.15) 0%, transparent 50%);
+  animation: aurora-rotate 20s linear infinite;
+  z-index: 0;
+}
+
+@keyframes aurora-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Skeuomorphic Accents ─────────────────────────────────────────────────── */
+.sos-button {
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+  box-shadow:
+    0 4px 12px rgba(239, 68, 68, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-full);
+  transition: all 0.2s ease;
+}
+
+.sos-button:hover {
+  box-shadow:
+    0 6px 20px rgba(239, 68, 68, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.sos-button:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow:
+    0 2px 8px rgba(239, 68, 68, 0.3),
+    inset 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.sos-pulse {
+  animation: sos-glow 2s ease-in-out infinite;
+}
+
+@keyframes sos-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+}
+
+.call-button {
+  background: linear-gradient(145deg, #10b981, #059669);
+  box-shadow:
+    0 4px 12px rgba(16, 185, 129, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  transition: all 0.2s ease;
+}
+
+.call-button:hover {
+  box-shadow:
+    0 6px 20px rgba(16, 185, 129, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* ─── Badge Shimmer (Top Rated only) ───────────────────────────────────────── */
+.badge-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.badge-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(245, 158, 11, 0.3) 45%,
+    rgba(245, 158, 11, 0.5) 50%,
+    rgba(245, 158, 11, 0.3) 55%,
+    transparent 100%
+  );
+  animation: shimmer-slide 3s ease-in-out infinite;
+}
+
+@keyframes shimmer-slide {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(50%); }
+}
+
+/* ─── Skeleton Loaders (per-morphism style) ────────────────────────────────── */
+.skeleton-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  animation: skeleton-pulse 2s ease-in-out infinite;
+}
+
+.skeleton-clay {
+  background: var(--clay-bg);
+  box-shadow: var(--shadow-clay);
+  border-radius: var(--clay-radius);
+  animation: skeleton-pulse 2s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ─── Scrollbar Styling ────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-muted);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* ─── Reduced Motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .aurora-bg {
+    background-size: 100% 100%;
+    animation: none;
+  }
+
+  .aurora-mesh::before {
+    animation: none;
+  }
+
+  .badge-shimmer::after {
+    animation: none;
+  }
+}
+
+/* ─── Magnetic Hover (for primary buttons) ─────────────────────────────────── */
+.magnetic-hover {
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ─── Ripple Effect ────────────────────────────────────────────────────────── */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ripple:active::after {
+  opacity: 1;
+}
+
+/* ─── Emergency Strip ──────────────────────────────────────────────────────── */
+.emergency-strip {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.03) 50%, rgba(239, 68, 68, 0.08) 100%);
+  border-top: 1px solid rgba(239, 68, 68, 0.15);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.dark .emergency-strip {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0.05) 50%, rgba(239, 68, 68, 0.12) 100%);
+  border-top: 1px solid rgba(239, 68, 68, 0.2);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+}

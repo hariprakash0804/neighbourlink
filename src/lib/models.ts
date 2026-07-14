@@ -1,0 +1,531 @@
+import { DataTypes, Model, type InferAttributes, type InferCreationAttributes, type CreationOptional } from "sequelize";
+import sequelize from "@/lib/db";
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+export const ROLES = ["RESIDENT", "VENDOR", "ADMIN"] as const;
+export type Role = (typeof ROLES)[number];
+
+export const VENDOR_CATEGORIES = [
+  "NEWSPAPER", "CABLE_DTH", "MILK", "LPG_GAS", "WATER_CAN",
+  "ELECTRICIAN", "PLUMBER", "CARPENTER", "AC_TECH", "MAID_COOK",
+  "LAUNDRY", "TUTOR", "OTHER",
+] as const;
+export type VendorCategory = (typeof VENDOR_CATEGORIES)[number];
+
+export const VERIFICATION_TIERS = ["UNVERIFIED", "ID_VERIFIED", "TOP_RATED"] as const;
+export type VerificationTier = (typeof VERIFICATION_TIERS)[number];
+
+export const ESSENTIAL_CATEGORIES = [
+  "HOSPITAL", "PHARMACY", "POLICE", "FIRE",
+  "ENTERTAINMENT", "SCHOOL", "ATM", "BANK",
+] as const;
+export type EssentialCategory = (typeof ESSENTIAL_CATEGORIES)[number];
+
+export const BOOKING_STATUSES = ["PENDING", "ACCEPTED", "DECLINED", "COMPLETED", "CANCELLED"] as const;
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
+
+export const REPORT_STATUSES = ["OPEN", "REVIEWING", "RESOLVED", "DISMISSED"] as const;
+export type ReportStatus = (typeof REPORT_STATUSES)[number];
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
+  declare id: CreationOptional<string>;
+  declare phone: string;
+  declare name: CreationOptional<string | null>;
+  declare email: CreationOptional<string | null>;
+  declare role: CreationOptional<Role>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+User.init(
+  {
+    id: {
+      type: DataTypes.STRING(50),
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    phone: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      unique: true,
+    },
+    name: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    email: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      unique: true,
+    },
+    role: {
+      type: DataTypes.ENUM(...ROLES),
+      allowNull: false,
+      defaultValue: "RESIDENT",
+    },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "User", tableName: "users" }
+);
+
+// ─── Address ──────────────────────────────────────────────────────────────────
+export class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Address>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare label: string;
+  declare lat: number;
+  declare lng: number;
+  declare pincode: string;
+  declare radiusMeters: CreationOptional<number>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+Address.init(
+  {
+    id: {
+      type: DataTypes.STRING(50),
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    userId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    label: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    lat: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    lng: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    pincode: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+    },
+    radiusMeters: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1000,
+    },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "Address", tableName: "addresses" }
+);
+
+// ─── Vendor ───────────────────────────────────────────────────────────────────
+export class Vendor extends Model<InferAttributes<Vendor>, InferCreationAttributes<Vendor>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare category: VendorCategory;
+  declare businessName: string;
+  declare description: CreationOptional<string | null>;
+  declare lat: number;
+  declare lng: number;
+  declare serviceRadiusM: number;
+  declare priceInfo: CreationOptional<object | null>;
+  declare workingHours: CreationOptional<object | null>;
+  declare verificationTier: CreationOptional<VerificationTier>;
+  declare idDocumentUrl: CreationOptional<string | null>;
+  declare ratingAvg: CreationOptional<number>;
+  declare ratingCount: CreationOptional<number>;
+  declare responseTimeMin: CreationOptional<number | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+Vendor.init(
+  {
+    id: {
+      type: DataTypes.STRING(50),
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    userId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      unique: true,
+    },
+    category: {
+      type: DataTypes.ENUM(...VENDOR_CATEGORIES),
+      allowNull: false,
+    },
+    businessName: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    lat: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    lng: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    serviceRadiusM: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    priceInfo: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    workingHours: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    verificationTier: {
+      type: DataTypes.ENUM(...VERIFICATION_TIERS),
+      allowNull: false,
+      defaultValue: "UNVERIFIED",
+    },
+    idDocumentUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    ratingAvg: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    ratingCount: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    responseTimeMin: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "Vendor", tableName: "vendors" }
+);
+
+// ─── Essential Service ────────────────────────────────────────────────────────
+export class EssentialService extends Model<InferAttributes<EssentialService>, InferCreationAttributes<EssentialService>> {
+  declare id: CreationOptional<string>;
+  declare category: EssentialCategory;
+  declare name: string;
+  declare lat: number;
+  declare lng: number;
+  declare phone: CreationOptional<string | null>;
+  declare is24x7: CreationOptional<boolean>;
+  declare isGovtSource: CreationOptional<boolean>;
+  declare metadata: CreationOptional<object | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+EssentialService.init(
+  {
+    id: {
+      type: DataTypes.STRING(50),
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    category: {
+      type: DataTypes.ENUM(...ESSENTIAL_CATEGORIES),
+      allowNull: false,
+    },
+    name: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    lat: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    lng: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    phone: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    is24x7: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    isGovtSource: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    metadata: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "EssentialService", tableName: "essential_services" }
+);
+
+// ─── Booking ──────────────────────────────────────────────────────────────────
+export class Booking extends Model<InferAttributes<Booking>, InferCreationAttributes<Booking>> {
+  declare id: CreationOptional<string>;
+  declare residentId: string;
+  declare vendorId: string;
+  declare status: CreationOptional<BookingStatus>;
+  declare slotStart: Date;
+  declare notes: CreationOptional<string | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+Booking.init(
+  {
+    id: {
+      type: DataTypes.STRING(50),
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    residentId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    vendorId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    status: {
+      type: DataTypes.ENUM(...BOOKING_STATUSES),
+      allowNull: false,
+      defaultValue: "PENDING",
+    },
+    slotStart: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "Booking", tableName: "bookings" }
+);
+
+// ─── Review ───────────────────────────────────────────────────────────────────
+export class Review extends Model<InferAttributes<Review>, InferCreationAttributes<Review>> {
+  declare id: CreationOptional<string>;
+  declare vendorId: string;
+  declare userId: string;
+  declare rating: number;
+  declare comment: CreationOptional<string | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+Review.init(
+  {
+    id: {
+      type: DataTypes.STRING(50),
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    vendorId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    userId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    rating: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: { min: 1, max: 5 },
+    },
+    comment: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "Review", tableName: "reviews" }
+);
+
+// ─── Report ───────────────────────────────────────────────────────────────────
+export class Report extends Model<InferAttributes<Report>, InferCreationAttributes<Report>> {
+  declare id: CreationOptional<string>;
+  declare reporterId: string;
+  declare targetType: string;
+  declare targetId: string;
+  declare reason: string;
+  declare status: CreationOptional<ReportStatus>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+Report.init(
+  {
+    id: {
+      type: DataTypes.STRING(50),
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    reporterId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    targetType: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      comment: "VENDOR | USER | REVIEW",
+    },
+    targetId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    reason: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    status: {
+      type: DataTypes.ENUM(...REPORT_STATUSES),
+      allowNull: false,
+      defaultValue: "OPEN",
+    },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "Report", tableName: "reports" }
+);
+
+// ─── Civic Report ─────────────────────────────────────────────────────────────
+export class CivicReport extends Model<InferAttributes<CivicReport>, InferCreationAttributes<CivicReport>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare lat: number;
+  declare lng: number;
+  declare category: string;
+  declare photoUrl: CreationOptional<string | null>;
+  declare status: CreationOptional<string>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+CivicReport.init(
+  {
+    id: {
+      type: DataTypes.STRING(50),
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    userId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    lat: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    lng: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    category: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      comment: "pothole, garbage, streetlight, etc.",
+    },
+    photoUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: "OPEN",
+    },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "CivicReport", tableName: "civic_reports" }
+);
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+export class AuditLog extends Model<InferAttributes<AuditLog>, InferCreationAttributes<AuditLog>> {
+  declare id: CreationOptional<string>;
+  declare actorId: string;
+  declare action: string;
+  declare targetId: CreationOptional<string | null>;
+  declare metadata: CreationOptional<object | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+AuditLog.init(
+  {
+    id: {
+      type: DataTypes.STRING(50),
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    actorId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    action: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    targetId: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    metadata: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "AuditLog", tableName: "audit_logs" }
+);
+
+// ─── Associations ─────────────────────────────────────────────────────────────
+User.hasMany(Address, { foreignKey: "userId", as: "addresses" });
+Address.belongsTo(User, { foreignKey: "userId", as: "user" });
+
+User.hasOne(Vendor, { foreignKey: "userId", as: "vendor" });
+Vendor.belongsTo(User, { foreignKey: "userId", as: "user" });
+
+User.hasMany(Review, { foreignKey: "userId", as: "reviews" });
+Review.belongsTo(User, { foreignKey: "userId", as: "user" });
+
+User.hasMany(Report, { foreignKey: "reporterId", as: "reports" });
+Report.belongsTo(User, { foreignKey: "reporterId", as: "reporter" });
+
+Vendor.hasMany(Booking, { foreignKey: "vendorId", as: "bookings" });
+Booking.belongsTo(Vendor, { foreignKey: "vendorId", as: "vendor" });
+
+Vendor.hasMany(Review, { foreignKey: "vendorId", as: "reviews" });
+Review.belongsTo(Vendor, { foreignKey: "vendorId", as: "vendor" });
+
+// ─── Sync helper (dev only) ──────────────────────────────────────────────────
+export async function syncDatabase(force = false) {
+  await sequelize.sync({ force, alter: !force });
+  console.log("✅ Database synced successfully");
+}
+
+export { sequelize };
