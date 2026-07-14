@@ -1,6 +1,8 @@
 import { router, protectedProcedure } from "../trpc";
 import { z } from "zod";
-import { VENDOR_CATEGORIES } from "@/lib/models";
+import { VENDOR_CATEGORIES, Vendor, User } from "@/lib/models";
+import { uploadFile } from "@/lib/storage";
+import { TRPCError } from "@trpc/server";
 
 export const vendorRouter = router({
   /**
@@ -20,20 +22,83 @@ export const vendorRouter = router({
         workingHours: z.record(z.string(), z.unknown()).optional(),
       })
     )
-    .mutation(async ({ input }) => {
-      // TODO: Phase 4 — create vendor profile
-      return { success: true, vendorId: "stub-id" };
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      // Check if vendor already exists
+      const existingVendor = await Vendor.findOne({ where: { userId } });
+      if (existingVendor) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "You are already registered as a vendor",
+        });
+      }
+
+      // Upgrade user role to VENDOR
+      await User.update({ role: "VENDOR" }, { where: { id: userId } });
+
+      // Create vendor profile
+      const vendor = await Vendor.create({
+        userId,
+        category: input.category as any,
+        businessName: input.businessName,
+        description: input.description || null,
+        lat: input.lat,
+        lng: input.lng,
+        serviceRadiusM: input.serviceRadiusM,
+        priceInfo: input.priceInfo || null,
+        workingHours: input.workingHours || null,
+        verificationTier: "UNVERIFIED",
+        ratingAvg: 0,
+        ratingCount: 0,
+        responseTimeMin: null,
+      });
+
+      return { success: true, vendorId: vendor.id };
     }),
 
   /**
-   * Upload identity/business document to MinIO
+   * Upload identity/business document to MinIO / FileSystem
    * Implementation: Phase 4
    */
   uploadDocument: protectedProcedure
-    .input(z.object({ vendorId: z.string() }))
-    .mutation(async ({ input }) => {
-      // TODO: Phase 4 — handle file upload to MinIO
-      return { success: true, documentUrl: "stub-url" };
+    .input(
+      z.object({
+        vendorId: z.string(),
+        fileName: z.string(),
+        fileType: z.string(),
+        base64Data: z.string(), // base64 string
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      // Verify vendor ownership
+      const vendor = await Vendor.findOne({ where: { id: input.vendorId, userId } });
+      if (!vendor) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not own this vendor profile",
+        });
+      }
+
+      // Convert base64 string back to binary buffer
+      const buffer = Buffer.from(input.base64Data, "base64");
+      const key = `${input.vendorId}-${Date.now()}-${input.fileName}`;
+
+      // Upload file via storage helper
+      const documentUrl = await uploadFile(key, buffer, input.fileType);
+
+      // Update vendor document URL
+      await Vendor.update({ idDocumentUrl: documentUrl }, { where: { id: input.vendorId } });
+
+      return { success: true, documentUrl };
     }),
 
   /**
@@ -50,8 +115,30 @@ export const vendorRouter = router({
         workingHours: z.record(z.string(), z.unknown()).optional(),
       })
     )
-    .mutation(async ({ input }) => {
-      // TODO: Phase 4 — update vendor record
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      // Verify vendor ownership
+      const vendor = await Vendor.findOne({ where: { id: input.vendorId, userId } });
+      if (!vendor) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not own this vendor profile",
+        });
+      }
+
+      // Update fields
+      const updates: any = {};
+      if (input.businessName !== undefined) updates.businessName = input.businessName;
+      if (input.description !== undefined) updates.description = input.description;
+      if (input.priceInfo !== undefined) updates.priceInfo = input.priceInfo;
+      if (input.workingHours !== undefined) updates.workingHours = input.workingHours;
+
+      await Vendor.update(updates, { where: { id: input.vendorId } });
+
       return { success: true };
     }),
 });
