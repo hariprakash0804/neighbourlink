@@ -24,11 +24,64 @@ import { cn, formatDistance, formatPhone, telLink, whatsappLink } from "@/lib/ut
 import { ESSENTIAL_CATEGORY_META, VENDOR_CATEGORY_META } from "@/lib/constants";
 import { Map } from "@/components/map/Map";
 import { useSession } from "next-auth/react";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 function DirectoryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   
+  // Auth & Booking states
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [bookingVendor, setBookingVendor] = useState<any>(null);
+  const [bookingDate, setBookingDate] = useState("");
+  const [bookingTime, setBookingTime] = useState("");
+  const [bookingNotes, setBookingNotes] = useState("");
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+
+  const createBooking = trpc.booking.create.useMutation();
+
+  const handleChatClick = (recipientUserId: string) => {
+    if (!session?.user) {
+      setIsAuthModalOpen(true);
+    } else {
+      router.push(`/chat?recipientId=${recipientUserId}`);
+    }
+  };
+
+  const handleBookClick = (vendor: any) => {
+    if (!session?.user) {
+      setIsAuthModalOpen(true);
+    } else {
+      setBookingVendor(vendor);
+      setBookingSuccess(false);
+      setBookingDate("");
+      setBookingTime("");
+      setBookingNotes("");
+    }
+  };
+
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bookingVendor || !bookingDate || !bookingTime) return;
+
+    try {
+      const slotStart = new Date(`${bookingDate}T${bookingTime}:00`);
+      await createBooking.mutateAsync({
+        vendorId: bookingVendor.id,
+        slotStart: slotStart.toISOString(),
+        notes: bookingNotes,
+      });
+      setBookingSuccess(true);
+      setTimeout(() => {
+        setBookingVendor(null);
+        setBookingSuccess(false);
+      }, 2000);
+    } catch (err) {
+      console.error("Booking error:", err);
+    }
+  };
+
   // Search parameters
   const activeCategory = searchParams.get("category") || "HOSPITAL";
   const [radius, setRadius] = useState<number>(3000); // Default 3km
@@ -43,7 +96,6 @@ function DirectoryContent() {
   } | null>(null);
 
   // Load user's default saved address if authenticated
-  const { data: session } = useSession();
   const { data: addresses } = trpc.location.getAddresses.useQuery(undefined, {
     enabled: !!session?.user,
   });
@@ -474,13 +526,13 @@ function DirectoryContent() {
                         </div>
                       </div>
 
-                      {/* Actions: Call & WhatsApp */}
-                      <div className="mt-4 pt-3.5 border-t border-white/5 flex gap-2">
+                      {/* Actions: Call, WhatsApp, Book, Chat */}
+                      <div className="mt-4 pt-3.5 border-t border-white/5 space-y-2">
                         {item.phone ? (
-                          <>
+                          <div className="flex gap-2">
                             <a
                               href={telLink(item.phone)}
-                              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 glass py-2.5 text-xs font-bold text-text-primary hover:bg-white/5 transition-all select-none"
+                              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 glass py-2 text-xs font-bold text-text-primary hover:bg-white/5 transition-all select-none"
                             >
                               <Phone className="h-3.5 w-3.5 text-success" />
                               <span>Call</span>
@@ -492,17 +544,30 @@ function DirectoryContent() {
                               )}
                               target="_blank"
                               rel="noreferrer"
-                              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 glass py-2.5 text-xs font-bold text-text-primary hover:bg-white/5 transition-all select-none"
+                              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 glass py-2 text-xs font-bold text-text-primary hover:bg-white/5 transition-all select-none"
                             >
                               <MessageSquare className="h-3.5 w-3.5 text-success fill-success/10" />
                               <span>WhatsApp</span>
                             </a>
-                          </>
-                        ) : (
-                          <span className="text-xs text-text-muted italic py-2 text-center w-full">
-                            Contact details unavailable
-                          </span>
-                        )}
+                          </div>
+                        ) : null}
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleBookClick(item)}
+                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-brand-primary to-brand-accent py-2 text-xs font-bold text-white hover:brightness-110 shadow-md transition-all select-none"
+                          >
+                            <Clock className="h-3.5 w-3.5" />
+                            <span>Book Slot</span>
+                          </button>
+                          <button
+                            onClick={() => handleChatClick(item.userId)}
+                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-brand-primary/30 bg-brand-primary/5 py-2 text-xs font-bold text-brand-primary hover:bg-brand-primary/10 transition-all select-none"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            <span>Chat</span>
+                          </button>
+                        </div>
                       </div>
                     </motion.div>
                   );
@@ -547,6 +612,111 @@ function DirectoryContent() {
           )}
         </button>
       </div>
+
+      {/* Auth Modal Trigger Fallback */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => setIsAuthModalOpen(false)}
+      />
+
+      {/* Booking Overlay Modal */}
+      <AnimatePresence>
+        {bookingVendor && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="clay-card p-6 w-full max-w-md mx-4 relative overflow-hidden text-text-primary border border-white/10"
+            >
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-primary to-brand-accent"></div>
+              
+              {bookingSuccess ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
+                  <div className="rounded-full bg-success/20 p-4 border border-success/30 text-success">
+                    <CheckCircle className="h-12 w-12 animate-pulse" />
+                  </div>
+                  <h3 className="text-lg font-bold">Request Sent!</h3>
+                  <p className="text-xs text-text-secondary">
+                    Your service booking request has been submitted to {bookingVendor.businessName}. They will review it shortly.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleBookingSubmit} className="space-y-4">
+                  <div>
+                    <h3 className="text-base font-bold text-text-primary">
+                      Book Service Slot
+                    </h3>
+                    <p className="text-xs text-text-secondary mt-1">
+                      Request an appointment with <span className="font-semibold text-brand-primary">{bookingVendor.businessName}</span>
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-muted mb-1">
+                        Select Date
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        min={new Date().toISOString().split("T")[0]}
+                        value={bookingDate}
+                        onChange={(e) => setBookingDate(e.target.value)}
+                        className="w-full rounded-xl bg-surface-secondary border border-white/10 px-3.5 py-2.5 text-xs text-text-primary focus:outline-none focus:border-brand-primary transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-text-muted mb-1">
+                        Select Preferred Time
+                      </label>
+                      <input
+                        type="time"
+                        required
+                        value={bookingTime}
+                        onChange={(e) => setBookingTime(e.target.value)}
+                        className="w-full rounded-xl bg-surface-secondary border border-white/10 px-3.5 py-2.5 text-xs text-text-primary focus:outline-none focus:border-brand-primary transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-text-muted mb-1">
+                        Job Description / Notes
+                      </label>
+                      <textarea
+                        value={bookingNotes}
+                        onChange={(e) => setBookingNotes(e.target.value)}
+                        placeholder="Explain the service requirement (e.g. socket repair, water leakage issue)..."
+                        rows={3}
+                        className="w-full rounded-xl bg-surface-secondary border border-white/10 px-3.5 py-2.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-brand-primary transition-all resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setBookingVendor(null)}
+                      className="flex-1 rounded-xl border border-white/10 glass py-2.5 text-xs font-bold text-text-primary hover:bg-white/5 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={createBooking.isPending}
+                      className="flex-1 rounded-xl bg-gradient-to-r from-brand-primary to-brand-accent py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 disabled:opacity-50 transition-all"
+                    >
+                      {createBooking.isPending ? "Submitting..." : "Request Booking"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

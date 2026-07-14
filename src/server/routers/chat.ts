@@ -1,9 +1,12 @@
 import { router, protectedProcedure } from "../trpc";
 import { z } from "zod";
+import { ChatMessage, User, Vendor } from "@/lib/models";
+import { TRPCError } from "@trpc/server";
+import { Op } from "sequelize";
 
 export const chatRouter = router({
   /**
-   * Send a chat message (also mirrored over Socket.io for realtime)
+   * Send a chat message (persists message in database)
    * Implementation: Phase 5
    */
   sendMessage: protectedProcedure
@@ -13,8 +16,171 @@ export const chatRouter = router({
         content: z.string().min(1).max(2000),
       })
     )
-    .mutation(async ({ input }) => {
-      // TODO: Phase 5 — save message + emit via Socket.io
-      return { success: true, messageId: "stub-id" };
+    .mutation(async ({ input, ctx }) => {
+      const senderId = ctx.session.userId;
+      if (!senderId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      if (senderId === input.recipientId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You cannot send messages to yourself.",
+        });
+      }
+
+      // Create message
+      const msg = await ChatMessage.create({
+        senderId,
+        recipientId: input.recipientId,
+        content: input.content,
+        readAt: null,
+      });
+
+      return {
+        success: true,
+        message: {
+          id: msg.id,
+          senderId: msg.senderId,
+          recipientId: msg.recipientId,
+          content: msg.content,
+          createdAt: msg.createdAt.toISOString(),
+        },
+      };
+    }),
+
+  /**
+   * Get messages between current user and a recipient
+   * Implementation: Phase 5
+   */
+  getConversation: protectedProcedure
+    .input(z.object({ recipientId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const messages = await ChatMessage.findAll({
+        where: {
+          [Op.or]: [
+            { senderId: userId, recipientId: input.recipientId },
+            { senderId: input.recipientId, recipientId: userId },
+          ],
+        },
+        order: [["createdAt", "ASC"]],
+      });
+
+      return {
+        messages: messages.map((m) => ({
+          id: m.id,
+          senderId: m.senderId,
+          recipientId: m.recipientId,
+          content: m.content,
+          readAt: m.readAt ? m.readAt.toISOString() : null,
+          createdAt: m.createdAt.toISOString(),
+        })),
+      };
+    }),
+
+  /**
+   * List all conversation partners, last message preview, and unread counts
+   * Implementation: Phase 5
+   */
+  listConversations: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.userId;
+    if (!userId) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+
+    // Find all messages involving user
+    const messages = await ChatMessage.findAll({
+      where: {
+        [Op.or]: [{ senderId: userId }, { recipientId: userId }],
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    // Group by other user ID
+    const conversationMap = new Map<string, { lastMsg: ChatMessage; unreadCount: number }>();
+
+    for (const msg of messages) {
+      const otherId = msg.senderId === userId ? msg.recipientId : msg.senderId;
+
+      if (!conversationMap.has(otherId)) {
+        conversationMap.set(otherId, {
+          lastMsg: msg,
+          unreadCount: 0,
+        });
+      }
+
+      // If the message is unread and sent by the other user, increment unread count
+      if (msg.recipientId === userId && !msg.readAt) {
+        const item = conversationMap.get(otherId)!;
+        item.unreadCount += 1;
+      }
+    }
+
+    const conversations = [];
+
+    // Fetch details for each conversation partner
+    for (const [otherId, info] of conversationMap.entries()) {
+      const user = await User.findByPk(otherId, {
+        attributes: ["id", "name", "phone", "role"],
+      });
+
+      if (!user) continue;
+
+      // If they are a VENDOR, look up their businessName
+      let businessName: string | null = null;
+      if (user.role === "VENDOR") {
+        const vendor = await Vendor.findOne({ where: { userId: otherId }, attributes: ["businessName"] });
+        businessName = vendor?.businessName || null;
+      }
+
+      conversations.push({
+        user: {
+          id: user.id,
+          name: user.name || "User",
+          phone: user.phone,
+          role: user.role,
+          businessName,
+        },
+        lastMessage: {
+          content: info.lastMsg.content,
+          createdAt: info.lastMsg.createdAt.toISOString(),
+          senderId: info.lastMsg.senderId,
+        },
+        unreadCount: info.unreadCount,
+      });
+    }
+
+    return { conversations };
+  }),
+
+  /**
+   * Mark all messages in a conversation as read
+   * Implementation: Phase 5
+   */
+  markRead: protectedProcedure
+    .input(z.object({ senderId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      await ChatMessage.update(
+        { readAt: new Date() },
+        {
+          where: {
+            senderId: input.senderId,
+            recipientId: userId,
+            readAt: null,
+          },
+        }
+      );
+
+      return { success: true };
     }),
 });

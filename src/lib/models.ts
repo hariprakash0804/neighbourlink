@@ -290,6 +290,10 @@ export class Booking extends Model<InferAttributes<Booking>, InferCreationAttrib
   declare notes: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare vendor?: Vendor;
+  declare resident?: User;
 }
 
 Booking.init(
@@ -506,6 +510,50 @@ AuditLog.init(
   { sequelize, modelName: "AuditLog", tableName: "audit_logs" }
 );
 
+// ─── ChatMessage ──────────────────────────────────────────────────────────────
+export class ChatMessage extends Model<InferAttributes<ChatMessage>, InferCreationAttributes<ChatMessage>> {
+  declare id: CreationOptional<string>;
+  declare senderId: string;
+  declare recipientId: string;
+  declare content: string;
+  declare readAt: CreationOptional<Date | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare sender?: User;
+  declare recipient?: User;
+}
+
+ChatMessage.init(
+  {
+    id: {
+      type: DataTypes.STRING(50),
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    senderId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    recipientId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    content: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    readAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  { sequelize, modelName: "ChatMessage", tableName: "chat_messages" }
+);
+
 // ─── Associations ─────────────────────────────────────────────────────────────
 User.hasMany(Address, { foreignKey: "userId", as: "addresses" });
 Address.belongsTo(User, { foreignKey: "userId", as: "user" });
@@ -522,8 +570,16 @@ Report.belongsTo(User, { foreignKey: "reporterId", as: "reporter" });
 Vendor.hasMany(Booking, { foreignKey: "vendorId", as: "bookings" });
 Booking.belongsTo(Vendor, { foreignKey: "vendorId", as: "vendor" });
 
+User.hasMany(Booking, { foreignKey: "residentId", as: "residentBookings" });
+Booking.belongsTo(User, { foreignKey: "residentId", as: "resident" });
+
 Vendor.hasMany(Review, { foreignKey: "vendorId", as: "reviews" });
 Review.belongsTo(Vendor, { foreignKey: "vendorId", as: "vendor" });
+
+User.hasMany(ChatMessage, { foreignKey: "senderId", as: "sentMessages" });
+User.hasMany(ChatMessage, { foreignKey: "recipientId", as: "receivedMessages" });
+ChatMessage.belongsTo(User, { foreignKey: "senderId", as: "sender" });
+ChatMessage.belongsTo(User, { foreignKey: "recipientId", as: "recipient" });
 
 // ─── Sync helper (dev only) ──────────────────────────────────────────────────
 export async function syncDatabase(force = false) {

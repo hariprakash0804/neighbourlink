@@ -19,6 +19,7 @@ import {
   User,
   Settings,
   CalendarDays,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EMERGENCY_NUMBERS, APP_NAME } from "@/lib/constants";
@@ -192,10 +193,16 @@ export function Navbar() {
 
                         {/* Menu items */}
                         <div className="py-1">
-                          <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors">
+                          <Link
+                            href={session.user.role === "VENDOR" ? "/vendor/dashboard" : "/bookings"}
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                          >
                             <User className="h-4 w-4" />
-                            <span>My Profile</span>
-                          </button>
+                            <span>
+                              {session.user.role === "VENDOR" ? "Vendor Dashboard" : "My Bookings"}
+                            </span>
+                          </Link>
                           <button
                             onClick={() => {
                               setIsProfileOpen(false);
@@ -206,14 +213,24 @@ export function Navbar() {
                             <MapPin className="h-4 w-4" />
                             <span>My Addresses</span>
                           </button>
-                          <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors">
-                            <CalendarDays className="h-4 w-4" />
-                            <span>My Bookings</span>
-                          </button>
-                          <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors">
-                            <Settings className="h-4 w-4" />
-                            <span>Settings</span>
-                          </button>
+                          <Link
+                            href="/chat"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                          >
+                            <MessageSquare className="h-4 w-4 text-brand-primary" />
+                            <span>Chat Inbox</span>
+                          </Link>
+                          {session.user.role !== "VENDOR" && (
+                            <Link
+                              href="/vendor/register"
+                              onClick={() => setIsProfileOpen(false)}
+                              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-brand-primary hover:bg-white/5 transition-colors font-semibold"
+                            >
+                              <Settings className="h-4 w-4" />
+                              <span>Register as Vendor</span>
+                            </Link>
+                          )}
                         </div>
 
                         <div className="border-t border-white/5 py-1">

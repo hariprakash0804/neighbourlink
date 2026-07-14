@@ -119,6 +119,7 @@ export const directoryRouter = router({
 
               return {
                 id: dbVendor.id,
+                userId: dbVendor.userId,
                 category: dbVendor.category,
                 businessName: dbVendor.businessName,
                 description: dbVendor.description,
@@ -184,6 +185,7 @@ export const directoryRouter = router({
           const distance = haversineDistance(lat, lng, v.lat, v.lng);
           return {
             id: v.id,
+            userId: v.userId,
             category: v.category,
             businessName: v.businessName,
             description: v.description,
