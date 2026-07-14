@@ -61,11 +61,13 @@ export async function uploadFile(
   // ─── LOCAL FILESYSTEM FALLBACK ───
   try {
     const uploadDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    const filePath = path.join(uploadDir, key);
+    const parentDir = path.dirname(filePath);
+    
+    if (!fs.existsSync(parentDir)) {
+      fs.mkdirSync(parentDir, { recursive: true });
     }
 
-    const filePath = path.join(uploadDir, key);
     fs.writeFileSync(filePath, buffer);
     console.log(`✅ Local filesystem upload successful: /uploads/${key}`);
     return `/uploads/${key}`;

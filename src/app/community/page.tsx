@@ -279,7 +279,13 @@ export default function CommunityHubPage() {
       <div className="max-w-4xl mx-auto px-4 mt-6">
         {/* Tab 1: Bulletin Board */}
         {activeTab === "bulletin" && (
-          <div className="grid gap-4 md:grid-cols-2">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="grid gap-4 md:grid-cols-2"
+          >
             {bulletinData?.posts.map((post) => (
               <div key={post.id} className="clay-card p-4 border border-white/5 flex flex-col justify-between">
                 <div className="space-y-3">
@@ -323,12 +329,18 @@ export default function CommunityHubPage() {
                 No active bulletin board posts. Create one to get the word out!
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Tab 2: Civic Issues */}
         {activeTab === "civic" && (
-          <div className="space-y-3">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="space-y-3"
+          >
             {civicData?.reports.map((report) => (
               <div key={report.id} className="clay-card p-4 border border-white/5 flex flex-col md:flex-row gap-4 items-start">
                 {report.photoUrl && (
@@ -396,12 +408,18 @@ export default function CommunityHubPage() {
                 No civic issues reported nearby. Keep your neighborhood beautiful by reporting potholes or garbage!
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Tab 3: Local Events */}
         {activeTab === "events" && (
-          <div className="grid gap-4 md:grid-cols-2">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="grid gap-4 md:grid-cols-2"
+          >
             {eventsData?.events.map((event) => (
               <div key={event.id} className="clay-card p-4 border border-white/5 flex flex-col justify-between">
                 <div className="space-y-3">
@@ -451,7 +469,7 @@ export default function CommunityHubPage() {
                 No upcoming events calendar posted. Be the first to schedule a festival or RWA meeting!
               </div>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
 

@@ -231,7 +231,13 @@ function VendorDetailContent() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary text-text-primary pb-24">
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -15 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="min-h-screen bg-surface-primary text-text-primary pb-24"
+    >
       {/* Auth Modal */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
 
@@ -646,7 +652,7 @@ function VendorDetailContent() {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
