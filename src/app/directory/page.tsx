@@ -15,10 +15,12 @@ import {
   CheckCircle,
   AlertCircle,
   Star,
-  ChevronRight,
+  Search,
+  MessageSquare,
+  ShieldAlert,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { cn, formatDistance, formatPhone, telLink } from "@/lib/utils";
+import { cn, formatDistance, formatPhone, telLink, whatsappLink } from "@/lib/utils";
 import { ESSENTIAL_CATEGORY_META, VENDOR_CATEGORY_META } from "@/lib/constants";
 import { Map } from "@/components/map/Map";
 import { useSession } from "next-auth/react";
@@ -30,10 +32,10 @@ function DirectoryContent() {
   // Search parameters
   const activeCategory = searchParams.get("category") || "HOSPITAL";
   const [radius, setRadius] = useState<number>(3000); // Default 3km
+  const [searchQuery, setSearchQuery] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
 
-  // User current location (simulated/persisted state, fall back to Bangalore center if not selected)
-  // In a real flow, this is read from global state or local storage or the session address
+  // User current location (persist locality / coordinates)
   const [centerLoc, setCenterLoc] = useState<{
     lat: number;
     lng: number;
@@ -48,14 +50,12 @@ function DirectoryContent() {
 
   useEffect(() => {
     if (addresses && addresses.length > 0) {
-      // Use the first saved address
       setCenterLoc({
         lat: addresses[0].lat,
         lng: addresses[0].lng,
         locality: addresses[0].label,
       });
     } else {
-      // Fallback default coordinates (Bangalore center)
       setCenterLoc({
         lat: 12.9716,
         lng: 77.5946,
@@ -64,8 +64,17 @@ function DirectoryContent() {
     }
   }, [addresses]);
 
-  // Query Essential Services
-  const { data, isLoading, error } = trpc.directory.searchEssentialServices.useQuery(
+  // Determine if active category is an Essential Service or local Vendor
+  const isEssential = useMemo(() => {
+    return ESSENTIAL_CATEGORY_META.some((c) => c.value === activeCategory);
+  }, [activeCategory]);
+
+  // Hook 1: Query Essential Services (only if active category is essential)
+  const {
+    data: essentialData,
+    isLoading: essentialLoading,
+    error: essentialError,
+  } = trpc.directory.searchEssentialServices.useQuery(
     {
       category: activeCategory,
       lat: centerLoc?.lat ?? 12.9716,
@@ -73,11 +82,34 @@ function DirectoryContent() {
       radius,
     },
     {
-      enabled: !!centerLoc,
+      enabled: !!centerLoc && isEssential,
     }
   );
 
-  const services = data?.services || [];
+  // Hook 2: Query Local Vendors (only if active category is vendor)
+  const {
+    data: vendorData,
+    isLoading: vendorLoading,
+    error: vendorError,
+  } = trpc.directory.searchVendors.useQuery(
+    {
+      category: activeCategory,
+      lat: centerLoc?.lat ?? 12.9716,
+      lng: centerLoc?.lng ?? 77.5946,
+      radius,
+      query: searchQuery,
+    },
+    {
+      enabled: !!centerLoc && !isEssential,
+    }
+  );
+
+  const isLoading = isEssential ? essentialLoading : vendorLoading;
+  const error = isEssential ? essentialError : vendorError;
+
+  // Extract lists
+  const services = essentialData?.services || [];
+  const vendors = vendorData?.vendors || [];
 
   // Metadata for active category
   const activeMeta = useMemo(() => {
@@ -92,48 +124,76 @@ function DirectoryContent() {
     );
   }, [activeCategory]);
 
+  // Map markers mapping
   const mapMarkers = useMemo(() => {
-    return services.map((s) => ({
-      id: s.id,
-      name: s.name,
-      lat: s.lat,
-      lng: s.lng,
-      color: activeMeta.color,
-      popupContent: (
-        <div className="p-1">
-          <p className="font-bold text-xs text-text-primary">{s.name}</p>
-          <p className="text-[10px] text-text-muted mt-0.5">
-            {formatDistance(s.distance)} away
-          </p>
-          {s.phone && (
-            <a
-              href={telLink(s.phone)}
-              className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-brand-primary hover:underline"
-            >
-              <Phone className="h-2.5 w-2.5" />
-              <span>Call</span>
-            </a>
-          )}
-        </div>
-      ),
-    }));
-  }, [services, activeMeta]);
+    if (isEssential) {
+      return services.map((s) => ({
+        id: s.id,
+        name: s.name,
+        lat: s.lat,
+        lng: s.lng,
+        color: activeMeta.color,
+        popupContent: (
+          <div className="p-1">
+            <p className="font-bold text-xs text-text-primary">{s.name}</p>
+            <p className="text-[10px] text-text-muted mt-0.5">
+              {formatDistance(s.distance)} away
+            </p>
+            {s.phone && (
+              <a
+                href={telLink(s.phone)}
+                className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-brand-primary hover:underline"
+              >
+                <Phone className="h-2.5 w-2.5" />
+                <span>Call</span>
+              </a>
+            )}
+          </div>
+        ),
+      }));
+    } else {
+      return vendors.map((v) => ({
+        id: v.id,
+        name: v.businessName,
+        lat: v.lat,
+        lng: v.lng,
+        color: activeMeta.color,
+        popupContent: (
+          <div className="p-1">
+            <p className="font-bold text-xs text-text-primary">{v.businessName}</p>
+            <p className="text-[10px] text-text-muted mt-0.5">
+              {formatDistance(v.distance)} away
+            </p>
+            {v.phone && (
+              <a
+                href={telLink(v.phone)}
+                className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-brand-primary hover:underline"
+              >
+                <Phone className="h-2.5 w-2.5" />
+                <span>Call</span>
+              </a>
+            )}
+          </div>
+        ),
+      }));
+    }
+  }, [isEssential, services, vendors, activeMeta]);
 
-  // Radius options helper
   const radiusOptions = [
     { label: "1km", value: 1000 },
     { label: "3km", value: 3000 },
     { label: "5km", value: 5000 },
     { label: "10km", value: 10000 },
+    { label: "20km", value: 20000 },
   ];
 
   return (
     <div className="flex flex-col h-[calc(100vh-var(--app-nav-height)-28px)] overflow-hidden">
       {/* Search Header Bar */}
-      <div className="glass-strong border-b border-white/10 p-4 shrink-0 flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="glass-strong border-b border-white/10 p-4 shrink-0 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-3">
           <div
-            className="flex h-11 w-11 items-center justify-center rounded-xl"
+            className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0"
             style={{ backgroundColor: `${activeMeta.color}15` }}
           >
             <activeMeta.icon className="h-6 w-6" style={{ color: activeMeta.color }} />
@@ -146,8 +206,22 @@ function DirectoryContent() {
           </div>
         </div>
 
-        {/* Radius selector & Location display */}
-        <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+        {/* Text Fuzzy search box (only for vendors) */}
+        {!isEssential && (
+          <div className="relative w-full md:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, tags, description..."
+              className="w-full rounded-xl py-2 pl-9 pr-4 text-xs glass focus:outline-none focus:ring-2 focus:ring-brand-primary/40 placeholder:text-text-muted"
+            />
+          </div>
+        )}
+
+        {/* Radius & Location */}
+        <div className="flex items-center gap-4 w-full md:w-auto justify-end shrink-0">
           <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary glass rounded-full px-3.5 py-1.5 border border-white/5">
             <MapPin className="h-3.5 w-3.5 text-brand-primary" />
             <span>Near {centerLoc?.locality}</span>
@@ -172,7 +246,7 @@ function DirectoryContent() {
         </div>
       </div>
 
-      {/* Directory Main Split View */}
+      {/* Main Split View */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Left Column: Listings */}
         <div
@@ -192,7 +266,7 @@ function DirectoryContent() {
               <h3 className="text-base font-bold">Search Failed</h3>
               <p className="text-xs text-text-secondary mt-1">{error.message}</p>
             </div>
-          ) : services.length === 0 ? (
+          ) : (isEssential ? services.length === 0 : vendors.length === 0) ? (
             <div className="flex-1 flex flex-col items-center justify-center py-12 text-center max-w-sm mx-auto">
               <Compass className="h-12 w-12 text-text-muted opacity-30 mb-3" />
               <h3 className="text-base font-bold">No Services Found</h3>
@@ -215,83 +289,224 @@ function DirectoryContent() {
               }}
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
-              {services.map((item) => (
-                <motion.div
-                  key={item.id}
-                  variants={{
-                    hidden: { opacity: 0, y: 15 },
-                    visible: { opacity: 1, y: 0 },
-                  }}
-                  className="clay-card p-5 flex flex-col justify-between h-full group"
-                >
-                  <div className="space-y-2.5">
-                    {/* Header: Title + govt badge */}
-                    <div className="flex items-start justify-between gap-2">
-                      <h3
-                        className="text-sm font-bold text-text-primary group-hover:text-brand-primary transition-colors line-clamp-2"
-                        style={{ fontFamily: "var(--font-heading)" }}
-                      >
-                        {item.name}
-                      </h3>
-                      {item.isGovtSource && (
-                        <span className="flex items-center gap-0.5 rounded-full bg-verified-blue/10 px-2 py-0.5 text-[10px] font-bold text-verified-blue shrink-0">
-                          <CheckCircle className="h-2.5 w-2.5" />
-                          <span>Govt</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Metadata tags */}
-                    <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5 text-brand-primary" />
-                        <span>{formatDistance(item.distance)}</span>
-                      </span>
-                      {item.is24x7 && (
-                        <span className="flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success uppercase">
-                          <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse"></span>
-                          <span>24x7</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Meta details if available */}
-                    {item.metadata && (
-                      <div className="text-xs text-text-secondary bg-surface-tertiary p-2.5 rounded-xl space-y-1">
-                        {Object.entries(item.metadata as Record<string, any>).map(
-                          ([key, value]) => (
-                            <div key={key} className="flex justify-between">
-                              <span className="text-text-muted capitalize">
-                                {key.replace(/([A-Z])/g, " $1")}
-                              </span>
-                              <span className="font-semibold text-text-primary">
-                                {typeof value === "boolean" ? (value ? "Yes" : "No") : String(value)}
-                              </span>
-                            </div>
-                          )
+              {/* ─── ESSENTIAL SERVICE CARDS ─── */}
+              {isEssential &&
+                services.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    variants={{
+                      hidden: { opacity: 0, y: 15 },
+                      visible: { opacity: 1, y: 0 },
+                    }}
+                    className="clay-card p-5 flex flex-col justify-between h-full group"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3
+                          className="text-sm font-bold text-text-primary group-hover:text-brand-primary transition-colors line-clamp-2"
+                          style={{ fontFamily: "var(--font-heading)" }}
+                        >
+                          {item.name}
+                        </h3>
+                        {item.isGovtSource && (
+                          <span className="flex items-center gap-0.5 rounded-full bg-verified-blue/10 px-2 py-0.5 text-[10px] font-bold text-verified-blue shrink-0">
+                            <CheckCircle className="h-2.5 w-2.5" />
+                            <span>Govt</span>
+                          </span>
                         )}
                       </div>
-                    )}
-                  </div>
 
-                  {/* Actions / Call details */}
-                  <div className="mt-4 pt-3.5 border-t border-white/5 flex items-center justify-between gap-2">
-                    {item.phone ? (
-                      <a
-                        href={telLink(item.phone)}
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 glass px-4 py-2 text-xs font-semibold text-text-primary hover:bg-white/5 transition-all w-full select-none"
-                      >
-                        <Phone className="h-3.5 w-3.5 text-success" />
-                        <span>{formatPhone(item.phone)}</span>
-                      </a>
-                    ) : (
-                      <span className="text-xs text-text-muted italic py-2">
-                        Contact details unavailable
-                      </span>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+                      <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5 text-brand-primary" />
+                          <span>{formatDistance(item.distance)}</span>
+                        </span>
+                        {item.is24x7 && (
+                          <span className="flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success uppercase">
+                            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse"></span>
+                            <span>24x7</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {item.metadata && (
+                        <div className="text-xs text-text-secondary bg-surface-tertiary p-2.5 rounded-xl space-y-1">
+                          {Object.entries(item.metadata as Record<string, any>).map(
+                            ([key, value]) => (
+                              <div key={key} className="flex justify-between">
+                                <span className="text-text-muted capitalize">
+                                  {key.replace(/([A-Z])/g, " $1")}
+                                </span>
+                                <span className="font-semibold text-text-primary">
+                                  {typeof value === "boolean"
+                                    ? value
+                                      ? "Yes"
+                                      : "No"
+                                    : String(value)}
+                                </span>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 pt-3.5 border-t border-white/5 flex items-center justify-between gap-2">
+                      {item.phone ? (
+                        <a
+                          href={telLink(item.phone)}
+                          className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 glass px-4 py-2 text-xs font-semibold text-text-primary hover:bg-white/5 transition-all w-full select-none"
+                        >
+                          <Phone className="h-3.5 w-3.5 text-success" />
+                          <span>{formatPhone(item.phone)}</span>
+                        </a>
+                      ) : (
+                        <span className="text-xs text-text-muted italic py-2">
+                          Contact details unavailable
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+
+              {/* ─── VENDOR CARDS ─── */}
+              {!isEssential &&
+                vendors.map((item) => {
+                  const price = item.priceInfo as Record<string, any> | null;
+                  const hours = item.workingHours as Record<string, any> | null;
+
+                  return (
+                    <motion.div
+                      key={item.id}
+                      variants={{
+                        hidden: { opacity: 0, y: 15 },
+                        visible: { opacity: 1, y: 0 },
+                      }}
+                      className="clay-card p-5 flex flex-col justify-between h-full group"
+                    >
+                      <div className="space-y-2.5">
+                        {/* Header: Business name + verification badge */}
+                        <div className="flex items-start justify-between gap-2">
+                          <h3
+                            className="text-sm font-bold text-text-primary group-hover:text-brand-primary transition-colors line-clamp-2"
+                            style={{ fontFamily: "var(--font-heading)" }}
+                          >
+                            {item.businessName}
+                          </h3>
+
+                          {/* Verification tiers */}
+                          {item.verificationTier === "TOP_RATED" ? (
+                            <span className="flex items-center gap-0.5 rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-bold text-warning border border-warning/20 animate-shimmer select-none shrink-0">
+                              <Star className="h-2.5 w-2.5 fill-warning text-warning" />
+                              <span>Top Rated</span>
+                            </span>
+                          ) : item.verificationTier === "ID_VERIFIED" ? (
+                            <span className="flex items-center gap-0.5 rounded-full bg-verified-blue/10 px-2 py-0.5 text-[10px] font-bold text-verified-blue shrink-0">
+                              <CheckCircle className="h-2.5 w-2.5" />
+                              <span>ID Verified</span>
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-0.5 rounded-full bg-text-muted/10 px-2 py-0.5 text-[10px] font-semibold text-text-muted shrink-0">
+                              <ShieldAlert className="h-2.5 w-2.5" />
+                              <span>Unverified</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Distance & rating summary */}
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
+                          <span className="flex items-center gap-1 font-medium">
+                            <MapPin className="h-3.5 w-3.5 text-brand-primary" />
+                            <span>{formatDistance(item.distance)}</span>
+                          </span>
+
+                          {item.ratingCount > 0 ? (
+                            <span className="flex items-center gap-0.5 text-warning font-semibold">
+                              <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                              <span>{item.ratingAvg}</span>
+                              <span className="text-[10px] text-text-muted">
+                                ({item.ratingCount})
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-text-muted">No reviews</span>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        {item.description && (
+                          <p className="text-xs text-text-secondary line-clamp-2">
+                            {item.description}
+                          </p>
+                        )}
+
+                        {/* Timing / Price Box */}
+                        <div className="text-xs text-text-secondary bg-surface-tertiary p-2.5 rounded-xl space-y-1.5">
+                          {price && (
+                            <div className="flex justify-between">
+                              <span className="text-text-muted">Price</span>
+                              <span className="font-bold text-text-primary">
+                                ₹{price.rate} / {price.unit}
+                              </span>
+                            </div>
+                          )}
+
+                          {hours && (
+                            <div className="flex justify-between">
+                              <span className="text-text-muted">Hours</span>
+                              <span className="font-semibold text-text-primary flex items-center gap-1">
+                                <Clock className="h-3 w-3 text-text-muted" />
+                                <span>
+                                  {hours.open} - {hours.close}
+                                </span>
+                              </span>
+                            </div>
+                          )}
+
+                          {item.responseTimeMin && (
+                            <div className="flex justify-between">
+                              <span className="text-text-muted">Replies in</span>
+                              <span className="font-medium text-success">
+                                ~{item.responseTimeMin} mins
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions: Call & WhatsApp */}
+                      <div className="mt-4 pt-3.5 border-t border-white/5 flex gap-2">
+                        {item.phone ? (
+                          <>
+                            <a
+                              href={telLink(item.phone)}
+                              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 glass py-2.5 text-xs font-bold text-text-primary hover:bg-white/5 transition-all select-none"
+                            >
+                              <Phone className="h-3.5 w-3.5 text-success" />
+                              <span>Call</span>
+                            </a>
+                            <a
+                              href={whatsappLink(
+                                item.phone,
+                                `Hello ${item.businessName}, I found you on NeighborLink and would like to book a service!`
+                              )}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 glass py-2.5 text-xs font-bold text-text-primary hover:bg-white/5 transition-all select-none"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5 text-success fill-success/10" />
+                              <span>WhatsApp</span>
+                            </a>
+                          </>
+                        ) : (
+                          <span className="text-xs text-text-muted italic py-2 text-center w-full">
+                            Contact details unavailable
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
             </motion.div>
           )}
         </div>

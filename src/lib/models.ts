@@ -140,6 +140,9 @@ export class Vendor extends Model<InferAttributes<Vendor>, InferCreationAttribut
   declare responseTimeMin: CreationOptional<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare user?: User;
 }
 
 Vendor.init(
