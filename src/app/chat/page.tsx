@@ -104,8 +104,24 @@ function ChatContent() {
     });
   };
 
+  const formatDateSeparator = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 0) return "Today";
+    if (diff === 1) return "Yesterday";
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  };
+
+  const shouldShowDateSeparator = (currentMsg: typeof messages[0], prevMsg: typeof messages[0] | undefined) => {
+    if (!prevMsg) return true;
+    const curr = new Date(currentMsg.createdAt).toDateString();
+    const prev = new Date(prevMsg.createdAt).toDateString();
+    return curr !== prev;
+  };
+
   return (
-    <div className="min-h-screen bg-surface-primary text-text-primary flex pt-16">
+    <div className="min-h-screen bg-surface-primary text-text-primary flex" style={{ paddingTop: 'var(--app-nav-height)' }}>
       <div className="w-full max-w-6xl mx-auto flex h-[calc(100vh-4rem)] border border-white/5 bg-surface-secondary/20 backdrop-blur-md overflow-hidden rounded-2xl my-4">
         
         {/* Left Side: Conversations List */}
@@ -191,7 +207,9 @@ function ChatContent() {
                         })}
                       </span>
                       {c.unreadCount > 0 && (
-                        <span className="h-2 w-2 rounded-full bg-brand-primary animate-pulse" />
+                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-primary text-[8px] font-bold text-white">
+                          {c.unreadCount > 9 ? '9+' : c.unreadCount}
+                        </span>
                       )}
                     </div>
                   </button>
@@ -266,34 +284,45 @@ function ChatContent() {
                     </div>
                   </div>
                 ) : (
-                  messages.map((m) => {
+                  messages.map((m, idx) => {
                     const isMe = m.senderId === session?.user?.id;
+                    const showDateSep = shouldShowDateSeparator(m, messages[idx - 1]);
 
                     return (
-                      <div
-                        key={m.id}
-                        className={cn(
-                          "flex w-full",
-                          isMe ? "justify-end" : "justify-start"
+                      <div key={m.id}>
+                        {showDateSep && (
+                          <div className="flex items-center gap-3 my-4">
+                            <div className="flex-1 h-px bg-white/5" />
+                            <span className="text-[10px] font-bold text-text-muted bg-surface-secondary/50 px-3 py-1 rounded-full">
+                              {formatDateSeparator(m.createdAt)}
+                            </span>
+                            <div className="flex-1 h-px bg-white/5" />
+                          </div>
                         )}
-                      >
                         <div
                           className={cn(
-                            "max-w-[75%] rounded-2xl px-4 py-2.5 text-xs text-text-primary relative shadow-md",
-                            isMe
-                              ? "bg-gradient-to-br from-brand-primary to-brand-accent text-white rounded-br-none border border-white/10"
-                              : "bg-surface-secondary border border-white/5 rounded-bl-none text-text-primary"
+                            "flex w-full",
+                            isMe ? "justify-end" : "justify-start"
                           )}
                         >
-                          <p className="leading-relaxed break-words">{m.content}</p>
-                          <span
+                          <div
                             className={cn(
-                              "text-[8px] mt-1 block text-right font-semibold select-none opacity-80",
-                              isMe ? "text-white/80" : "text-text-muted"
+                              "max-w-[75%] rounded-2xl px-4 py-2.5 text-xs text-text-primary relative shadow-md",
+                              isMe
+                                ? "bg-gradient-to-br from-brand-primary to-brand-accent text-white rounded-br-none border border-white/10"
+                                : "bg-surface-secondary border border-white/5 rounded-bl-none text-text-primary"
                             )}
                           >
-                            {formatMessageTime(m.createdAt)}
-                          </span>
+                            <p className="leading-relaxed break-words">{m.content}</p>
+                            <span
+                              className={cn(
+                                "text-[8px] mt-1 block text-right font-semibold select-none opacity-80",
+                                isMe ? "text-white/80" : "text-text-muted"
+                              )}
+                            >
+                              {formatMessageTime(m.createdAt)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );

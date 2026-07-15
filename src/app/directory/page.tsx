@@ -18,9 +18,13 @@ import {
   Search,
   MessageSquare,
   ShieldAlert,
+  Heart,
+  Share2,
+  ArrowUpDown,
+  Scale,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { cn, formatDistance, formatPhone, telLink, whatsappLink } from "@/lib/utils";
+import { cn, formatDistance, formatPhone, telLink, whatsappLink, shareContent } from "@/lib/utils";
 import { ESSENTIAL_CATEGORY_META, VENDOR_CATEGORY_META } from "@/lib/constants";
 import { Map } from "@/components/map/Map";
 import { useSession } from "next-auth/react";
@@ -91,6 +95,35 @@ function DirectoryContent() {
   const [radius, setRadius] = useState<number>(3000); // Default 3km
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
+  const [sortBy, setSortBy] = useState<"distance" | "rating" | "response">("distance");
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+  // Favorites
+  const toggleFavorite = trpc.favorites.toggle.useMutation();
+  const handleToggleFavorite = async (vendorId: string) => {
+    if (!session?.user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    try {
+      await toggleFavorite.mutateAsync({ vendorId });
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(vendorId)) next.delete(vendorId);
+        else next.add(vendorId);
+        return next;
+      });
+      toast.success(favoriteIds.has(vendorId) ? "Removed from favorites" : "Added to favorites!");
+    } catch {
+      toast.error("Failed to update favorites");
+    }
+  };
+
+  const handleShare = async (name: string, id: string) => {
+    const url = `${typeof window !== "undefined" ? window.location.origin : ""}/vendor/${id}`;
+    const ok = await shareContent({ title: name, text: `Check out ${name} on NeighborLink`, url });
+    if (ok) toast.success("Link copied!");
+  };
 
   // User current location (persist locality / coordinates)
   const [centerLoc, setCenterLoc] = useState<{
@@ -165,7 +198,27 @@ function DirectoryContent() {
 
   // Extract lists
   const services = essentialData?.services || [];
-  const vendors = vendorData?.vendors || [];
+  const rawVendors = vendorData?.vendors || [];
+
+  // Sort vendors
+  const vendors = useMemo(() => {
+    const sorted = [...rawVendors];
+    switch (sortBy) {
+      case "rating":
+        sorted.sort((a, b) => b.ratingAvg - a.ratingAvg);
+        break;
+      case "response":
+        sorted.sort((a, b) => (a.responseTimeMin || 999) - (b.responseTimeMin || 999));
+        break;
+      case "distance":
+      default:
+        sorted.sort((a, b) => a.distance - b.distance);
+        break;
+    }
+    return sorted;
+  }, [rawVendors, sortBy]);
+
+  const totalResults = isEssential ? services.length : vendors.length;
 
   // Metadata for active category
   const activeMeta = useMemo(() => {
@@ -301,12 +354,35 @@ function DirectoryContent() {
           </div>
         )}
 
-        {/* Radius & Location */}
-        <div className="flex items-center gap-4 w-full md:w-auto justify-end shrink-0">
+        {/* Radius, Sort & Location */}
+        <div className="flex items-center gap-3 w-full md:w-auto justify-end shrink-0 flex-wrap">
+          {/* Results count */}
+          {!isLoading && (
+            <span className="text-[10px] text-text-muted font-medium">
+              {totalResults} result{totalResults !== 1 ? "s" : ""} within {radius >= 1000 ? `${radius / 1000}km` : `${radius}m`}
+            </span>
+          )}
+
           <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary glass rounded-full px-3.5 py-1.5 border border-white/5">
             <MapPin className="h-3.5 w-3.5 text-brand-primary" />
             <span>Near {centerLoc?.locality}</span>
           </div>
+
+          {/* Sort dropdown (vendors only) */}
+          {!isEssential && (
+            <div className="flex items-center gap-1.5 glass rounded-xl px-3 py-1.5 text-xs">
+              <ArrowUpDown className="h-3 w-3 text-text-muted" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-transparent text-xs font-medium text-text-secondary focus:outline-none cursor-pointer"
+              >
+                <option value="distance">Nearest</option>
+                <option value="rating">Top Rated</option>
+                <option value="response">Fastest Response</option>
+              </select>
+            </div>
+          )}
 
           <div className="flex gap-1 p-1 glass rounded-xl">
             {radiusOptions.map((opt) => (
@@ -555,8 +631,26 @@ function DirectoryContent() {
                         </div>
                       </div>
 
+                      {/* Quick actions: Favorite + Share */}
+                      <div className="flex items-center gap-1.5 mt-3">
+                        <button
+                          onClick={() => handleToggleFavorite(item.id)}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg glass hover:bg-white/10 transition-all"
+                          aria-label={favoriteIds.has(item.id) ? "Remove from favorites" : "Add to favorites"}
+                        >
+                          <Heart className={cn("h-3.5 w-3.5", favoriteIds.has(item.id) ? "fill-danger text-danger" : "text-text-muted")} />
+                        </button>
+                        <button
+                          onClick={() => handleShare(item.businessName, item.id)}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg glass hover:bg-white/10 transition-all"
+                          aria-label="Share vendor"
+                        >
+                          <Share2 className="h-3.5 w-3.5 text-text-muted" />
+                        </button>
+                      </div>
+
                       {/* Actions: Call, WhatsApp, Book, Chat */}
-                      <div className="mt-4 pt-3.5 border-t border-white/5 space-y-2">
+                      <div className="mt-3 pt-3.5 border-t border-white/5 space-y-2">
                         {item.phone ? (
                           <div className="flex gap-2">
                             <a
@@ -597,12 +691,21 @@ function DirectoryContent() {
                             <span>Chat</span>
                           </button>
                         </div>
-                        <button
-                          onClick={() => router.push(`/vendor/${item.id}`)}
-                          className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-white/5 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all select-none"
-                        >
-                          View Profile & Reviews →
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => router.push(`/vendor/${item.id}`)}
+                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/5 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all select-none"
+                          >
+                            View Profile →
+                          </button>
+                          <button
+                            onClick={() => router.push(`/compare?ids=${item.id}`)}
+                            className="flex items-center justify-center gap-1 rounded-xl border border-white/5 px-3 py-1.5 text-[11px] font-medium text-text-secondary hover:text-brand-primary hover:bg-white/5 transition-all select-none"
+                          >
+                            <Scale className="h-3 w-3" />
+                            Compare
+                          </button>
+                        </div>
                       </div>
                     </motion.div>
                   );
@@ -632,7 +735,7 @@ function DirectoryContent() {
       <div className="lg:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
         <button
           onClick={() => setMobileView(mobileView === "list" ? "map" : "list")}
-          className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-primary to-brand-accent px-5 py-3 text-sm font-semibold text-white shadow-elevated border border-white/20 select-none animate-bounce"
+          className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-primary to-brand-accent px-5 py-3 text-sm font-semibold text-white shadow-elevated border border-white/20 select-none"
         >
           {mobileView === "list" ? (
             <>

@@ -11,6 +11,9 @@ import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SosButton } from "@/components/sos/SosButton";
 import { ToastProvider } from "@/components/providers/ToastProvider";
+import { QuickActions } from "@/components/layout/QuickActions";
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -89,6 +92,15 @@ export default function RootLayout({
 
                   {/* Global floating emergency SOS Alert button */}
                   <SosButton />
+
+                  {/* Mobile Quick Actions FAB Menu */}
+                  <QuickActions />
+
+                  {/* Scroll to Top Button */}
+                  <ScrollToTop />
+
+                  {/* Onboarding Welcome Modal */}
+                  <WelcomeModal />
                 </div>
               </ToastProvider>
             </TRPCProvider>

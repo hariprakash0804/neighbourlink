@@ -64,6 +64,7 @@ export function Sidebar({ className }: SidebarProps) {
   
   const [essentialCollapsed, setEssentialCollapsed] = useState(false);
   const [vendorCollapsed, setVendorCollapsed] = useState(false);
+  const [filterText, setFilterText] = useState("");
 
   const handleCategoryClick = (categoryVal: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -73,10 +74,18 @@ export function Sidebar({ className }: SidebarProps) {
       params.set("category", categoryVal);
     }
     
-    // Redirect to /directory if not already there, else just push query params
-    const targetPath = pathname === "/directory" ? "/directory" : "/directory";
-    router.push(`${targetPath}?${params.toString()}`);
+    router.push(`/directory?${params.toString()}`);
   };
+
+  const filteredEssential = ESSENTIAL_CATEGORY_META.filter((cat) =>
+    cat.label.toLowerCase().includes(filterText.toLowerCase())
+  );
+
+  const filteredVendor = VENDOR_CATEGORY_META.filter((cat) =>
+    cat.label.toLowerCase().includes(filterText.toLowerCase())
+  );
+
+  const popularCategories = ["PLUMBER", "ELECTRICIAN", "HOSPITAL", "MILK"];
 
   return (
     <aside
@@ -86,75 +95,125 @@ export function Sidebar({ className }: SidebarProps) {
         "overflow-y-auto scrollbar-thin",
         className
       )}
-      style={{ height: "calc(100vh - var(--app-nav-height) - 28px)" }}
+      style={{ height: "calc(100vh - var(--app-nav-height))" }}
     >
-      <div className="p-4 space-y-1">
-        {/* Essential Services Section */}
-        <button
-          onClick={() => setEssentialCollapsed(!essentialCollapsed)}
-          className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-text-secondary transition-colors"
-        >
-          <Building2 className="h-3.5 w-3.5" />
-          <span>Essential Services</span>
-          <ChevronRight
-            className={cn(
-              "ml-auto h-3.5 w-3.5 transition-transform",
-              !essentialCollapsed && "rotate-90"
-            )}
+      {/* Category Search Input */}
+      <div className="p-4 border-b border-white/5">
+        <div className="relative">
+          <input
+            type="text"
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            placeholder="Search categories..."
+            className="w-full rounded-xl bg-surface-secondary border border-white/10 px-3 py-2 pl-8 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-brand-primary transition-all"
           />
-        </button>
-        <motion.div
-          initial={false}
-          animate={{ height: essentialCollapsed ? 0 : "auto", opacity: essentialCollapsed ? 0 : 1 }}
-          transition={{ duration: 0.2 }}
-          className="overflow-hidden"
-        >
-          <div className="space-y-0.5 pb-2">
-            {ESSENTIAL_CATEGORY_META.map((cat) => (
-              <CategoryChip
-                key={cat.value}
-                category={cat}
-                isActive={activeCategory === cat.value}
-                onClick={() => handleCategoryClick(cat.value)}
+          <svg
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-1 flex-1">
+        {/* Essential Services Section */}
+        {filteredEssential.length > 0 && (
+          <>
+            <button
+              onClick={() => setEssentialCollapsed(!essentialCollapsed)}
+              className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-text-secondary transition-colors"
+            >
+              <Building2 className="h-3.5 w-3.5" />
+              <span>Essential Services</span>
+              <ChevronRight
+                className={cn(
+                  "ml-auto h-3.5 w-3.5 transition-transform",
+                  !essentialCollapsed && "rotate-90"
+                )}
               />
-            ))}
-          </div>
-        </motion.div>
+            </button>
+            <motion.div
+              initial={false}
+              animate={{ height: essentialCollapsed ? 0 : "auto", opacity: essentialCollapsed ? 0 : 1 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-0.5 pb-2">
+                {filteredEssential.map((cat) => (
+                  <div key={cat.value} className="relative flex items-center group">
+                    <CategoryChip
+                      category={cat}
+                      isActive={activeCategory === cat.value}
+                      onClick={() => handleCategoryClick(cat.value)}
+                    />
+                    {popularCategories.includes(cat.value) && (
+                      <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[9px] bg-brand-primary/10 text-brand-primary px-1.5 py-0.5 rounded-full font-bold select-none">
+                        Popular
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
 
         {/* Divider */}
-        <div className="mx-3 border-t border-white/5 dark:border-white/5" />
+        {filteredEssential.length > 0 && filteredVendor.length > 0 && (
+          <div className="mx-3 my-2 border-t border-white/5" />
+        )}
 
         {/* Local Vendors Section */}
-        <button
-          onClick={() => setVendorCollapsed(!vendorCollapsed)}
-          className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-text-secondary transition-colors"
-        >
-          <Wrench className="h-3.5 w-3.5" />
-          <span>Local Vendors</span>
-          <ChevronRight
-            className={cn(
-              "ml-auto h-3.5 w-3.5 transition-transform",
-              !vendorCollapsed && "rotate-90"
-            )}
-          />
-        </button>
-        <motion.div
-          initial={false}
-          animate={{ height: vendorCollapsed ? 0 : "auto", opacity: vendorCollapsed ? 0 : 1 }}
-          transition={{ duration: 0.2 }}
-          className="overflow-hidden"
-        >
-          <div className="space-y-0.5 pb-2">
-            {VENDOR_CATEGORY_META.map((cat) => (
-              <CategoryChip
-                key={cat.value}
-                category={cat}
-                isActive={activeCategory === cat.value}
-                onClick={() => handleCategoryClick(cat.value)}
+        {filteredVendor.length > 0 && (
+          <>
+            <button
+              onClick={() => setVendorCollapsed(!vendorCollapsed)}
+              className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-text-secondary transition-colors"
+            >
+              <Wrench className="h-3.5 w-3.5" />
+              <span>Local Vendors</span>
+              <ChevronRight
+                className={cn(
+                  "ml-auto h-3.5 w-3.5 transition-transform",
+                  !vendorCollapsed && "rotate-90"
+                )}
               />
-            ))}
+            </button>
+            <motion.div
+              initial={false}
+              animate={{ height: vendorCollapsed ? 0 : "auto", opacity: vendorCollapsed ? 0 : 1 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-0.5 pb-2">
+                {filteredVendor.map((cat) => (
+                  <div key={cat.value} className="relative flex items-center group">
+                    <CategoryChip
+                      category={cat}
+                      isActive={activeCategory === cat.value}
+                      onClick={() => handleCategoryClick(cat.value)}
+                    />
+                    {popularCategories.includes(cat.value) && (
+                      <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[9px] bg-brand-accent/10 text-brand-accent px-1.5 py-0.5 rounded-full font-bold select-none">
+                        Popular
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {filteredEssential.length === 0 && filteredVendor.length === 0 && (
+          <div className="text-center py-8 text-xs text-text-muted">
+            No matching categories found.
           </div>
-        </motion.div>
+        )}
       </div>
     </aside>
   );

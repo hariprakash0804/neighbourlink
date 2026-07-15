@@ -2,29 +2,38 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Home, Search, AlertTriangle, CalendarDays, User, Bell } from "lucide-react";
+import { Home, Search, AlertTriangle, Megaphone, CalendarDays, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { useSession } from "next-auth/react";
 
 const NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home, href: "/" },
   { id: "search", label: "Directory", icon: Search, href: "/directory" },
   { id: "sos", label: "SOS", icon: AlertTriangle, isSos: true, href: "#" },
-  { id: "bookings", label: "Bookings", icon: CalendarDays, href: "/bookings" },
+  { id: "community", label: "Community", icon: Megaphone, href: "/community" },
   { id: "profile", label: "Profile", icon: User, href: "/profile" },
 ] as const;
 
 export function MobileBottomNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  // Unread notifications for badge
+  const { data: unreadData } = trpc.notifications.unreadCount.useQuery(undefined, {
+    enabled: !!session?.user,
+    refetchInterval: 15000,
+  });
 
   // Determine active tab from current pathname
   const getActiveTab = () => {
     if (pathname === "/") return "home";
     if (pathname.startsWith("/directory") || pathname.startsWith("/vendor")) return "search";
+    if (pathname.startsWith("/community")) return "community";
     if (pathname.startsWith("/bookings")) return "bookings";
     if (pathname.startsWith("/profile")) return "profile";
-    if (pathname.startsWith("/notifications")) return "notifications";
+    if (pathname.startsWith("/notifications")) return "profile";
     return "home";
   };
 
@@ -57,7 +66,7 @@ export function MobileBottomNav() {
               aria-label={item.label}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1 w-16 py-1.5 rounded-2xl transition-all",
+                "relative flex flex-col items-center justify-center gap-1 w-16 py-1.5 rounded-2xl transition-all active:scale-90",
                 isSos && "relative -mt-5"
               )}
             >
@@ -69,7 +78,7 @@ export function MobileBottomNav() {
               ) : (
                 <>
                   <div className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-xl transition-all",
+                    "relative flex h-8 w-8 items-center justify-center rounded-xl transition-all",
                     isActive && "bg-brand-primary/10"
                   )}>
                     <Icon
@@ -78,6 +87,12 @@ export function MobileBottomNav() {
                         isActive ? "text-brand-primary" : "text-text-muted"
                       )}
                     />
+                    {/* Notification badge on Profile */}
+                    {item.id === "profile" && unreadData && unreadData.count > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[8px] font-bold text-white">
+                        {unreadData.count > 9 ? "9+" : unreadData.count}
+                      </span>
+                    )}
                   </div>
                   {isActive && (
                     <motion.div

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,6 +32,7 @@ import { trpc } from "@/lib/trpc";
 
 export function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -155,24 +156,35 @@ export function Navbar() {
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center gap-1">
-              <Link
-                href="/directory"
-                className="px-3.5 py-1.5 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-full transition-all"
-              >
-                Directory
-              </Link>
-              <Link
-                href="/community"
-                className="px-3.5 py-1.5 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-full transition-all"
-              >
-                Community Hub
-              </Link>
-              <Link
-                href="/about"
-                className="px-3.5 py-1.5 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-full transition-all"
-              >
-                About
-              </Link>
+              {[
+                { href: "/directory", label: "Directory" },
+                { href: "/community", label: "Community Hub" },
+                { href: "/compare", label: "Compare" },
+                { href: "/about", label: "About" },
+              ].map((link) => {
+                const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      "relative px-3.5 py-1.5 text-xs font-bold rounded-full transition-all",
+                      isActive
+                        ? "text-brand-primary bg-brand-primary/5"
+                        : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+                    )}
+                  >
+                    {link.label}
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-active-indicator"
+                        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-brand-primary"
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    )}
+                  </Link>
+                );
+              })}
             </div>
 
             {/* Location Switcher — Glass dropdown */}
@@ -208,9 +220,12 @@ export function Navbar() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Search services, vendors, places..."
-                  className="w-full rounded-full py-2.5 pl-10 pr-4 text-sm glass transition-all focus:outline-none focus:ring-2 focus:ring-brand-primary/30 placeholder:text-text-muted"
+                  className="w-full rounded-full py-2.5 pl-10 pr-12 text-sm glass transition-all focus:outline-none focus:ring-2 focus:ring-brand-primary/30 placeholder:text-text-muted"
                   aria-label="Search services and vendors"
                 />
+                <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 rounded-md border border-white/10 bg-surface-tertiary/50 px-1.5 py-0.5 text-[10px] font-mono text-text-muted">
+                  ⌘K
+                </kbd>
               </div>
             </div>
 
@@ -467,30 +482,32 @@ export function Navbar() {
 
                 {/* Mobile Navigation Links */}
                 <div className="flex flex-col gap-1">
-                  <Link
-                    href="/directory"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-secondary hover:bg-white/5 transition-colors"
-                  >
-                    <Search className="h-4 w-4 text-brand-primary" />
-                    Directory
-                  </Link>
-                  <Link
-                    href="/community"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-secondary hover:bg-white/5 transition-colors"
-                  >
-                    <MessageSquare className="h-4 w-4 text-brand-primary" />
-                    Community Hub
-                  </Link>
-                  <Link
-                    href="/about"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-secondary hover:bg-white/5 transition-colors"
-                  >
-                    <User className="h-4 w-4 text-brand-primary" />
-                    About
-                  </Link>
+                  {[
+                    { href: "/directory", icon: Search, label: "Directory" },
+                    { href: "/community", icon: MessageSquare, label: "Community Hub" },
+                    { href: "/compare", icon: Settings, label: "Compare Vendors" },
+                    { href: "/about", icon: User, label: "About" },
+                  ].map((link) => {
+                    const LinkIcon = link.icon;
+                    const isActive = pathname === link.href;
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
+                          isActive
+                            ? "text-brand-primary bg-brand-primary/5 font-bold"
+                            : "text-text-secondary hover:bg-white/5"
+                        )}
+                      >
+                        <LinkIcon className={cn("h-4 w-4", isActive ? "text-brand-primary" : "text-brand-primary")} />
+                        {link.label}
+                        {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-primary" />}
+                      </Link>
+                    );
+                  })}
                 </div>
 
                 {/* Mobile Location */}

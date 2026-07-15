@@ -19,9 +19,13 @@ import {
   ChevronRight,
   Eye,
   CheckCircle,
+  Share2,
+  ThumbsUp,
+  Heart,
+  MessageCircle,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
+import { cn, timeAgo, shareContent } from "@/lib/utils";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useToast } from "@/components/providers/ToastProvider";
 
@@ -350,10 +354,23 @@ export default function CommunityHubPage() {
                     <UserIcon className="h-3 w-3" />
                     {post.authorName}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {new Date(post.createdAt).toLocaleDateString()}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      className="flex items-center gap-1 hover:text-brand-primary transition-colors"
+                      onClick={() => shareContent({
+                        title: post.title,
+                        text: post.content.slice(0, 100),
+                        url: typeof window !== 'undefined' ? window.location.href : '',
+                      }).then((ok) => ok && toast.success('Link copied!'))}
+                    >
+                      <Share2 className="h-3 w-3" />
+                      Share
+                    </button>
+                    <span className="flex items-center gap-1 time-ago">
+                      <Clock className="h-3 w-3" />
+                      {timeAgo(post.createdAt)}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -405,16 +422,27 @@ export default function CommunityHubPage() {
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-text-secondary/60">
                     <span className="flex items-center gap-1">
                       <UserIcon className="h-3 w-3" />
-                      Reported by: {report.reporterName}
+                      {report.reporterName}
                     </span>
                     <span className="flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-brand-primary" />
-                      Distance: {report.distanceM}m away
+                      {report.distanceM}m away
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 time-ago">
                       <Clock className="h-3 w-3" />
-                      {new Date(report.createdAt).toLocaleDateString()}
+                      {timeAgo(report.createdAt)}
                     </span>
+                    <button
+                      className="flex items-center gap-1 hover:text-brand-primary transition-colors"
+                      onClick={() => shareContent({
+                        title: `Civic Issue: ${report.category}`,
+                        text: report.description || report.category,
+                        url: typeof window !== 'undefined' ? window.location.href : '',
+                      }).then((ok) => ok && toast.success('Link copied!'))}
+                    >
+                      <Share2 className="h-3 w-3" />
+                      Share
+                    </button>
                   </div>
                 </div>
                 {/* Admin Status controls */}
@@ -493,7 +521,20 @@ export default function CommunityHubPage() {
                 </div>
                 <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-text-secondary/60">
                   <span>Organizer: {event.authorName}</span>
-                  <span>Created {new Date(event.createdAt).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      className="flex items-center gap-1 hover:text-brand-primary transition-colors"
+                      onClick={() => shareContent({
+                        title: event.title,
+                        text: `${event.title} at ${event.venue}`,
+                        url: typeof window !== 'undefined' ? window.location.href : '',
+                      }).then((ok) => ok && toast.success('Link copied!'))}
+                    >
+                      <Share2 className="h-3 w-3" />
+                      Share
+                    </button>
+                    <span className="time-ago">{timeAgo(event.createdAt)}</span>
+                  </div>
                 </div>
               </div>
             ))}

@@ -91,3 +91,49 @@ export function generateId(): string {
   return Math.random().toString(36).substring(2, 15) +
     Math.random().toString(36).substring(2, 15);
 }
+
+/**
+ * Format a date string to relative time (e.g., "2 hours ago", "3 days ago")
+ */
+export function timeAgo(dateStr: string | Date): string {
+  const date = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `${weeks}w ago`;
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+/**
+ * Share content using Web Share API with clipboard fallback
+ */
+export async function shareContent(data: { title: string; text: string; url: string }): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.share) {
+    try {
+      await navigator.share(data);
+      return true;
+    } catch {
+      // User cancelled or error
+      return false;
+    }
+  }
+  // Fallback: copy URL to clipboard
+  if (typeof navigator !== "undefined" && navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(data.url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
