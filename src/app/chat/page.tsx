@@ -17,11 +17,13 @@ import {
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { useToast } from "@/components/providers/ToastProvider";
 
 function ChatContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
+  const toast = useToast();
 
   // Selected partner
   const recipientId = searchParams.get("recipientId") || "";
@@ -85,8 +87,11 @@ function ChatContent() {
       });
       refetchHistory();
       refetchConversations();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to send message:", err);
+      // Restore input text so the user doesn't lose their draft
+      setTypedMessage(messageText);
+      toast.error(err.message || "Failed to send message.");
     }
   };
 

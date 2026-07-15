@@ -23,9 +23,11 @@ import {
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { useToast } from "@/components/providers/ToastProvider";
 
 export default function CommunityHubPage() {
   const { data: session } = useSession();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<"bulletin" | "civic" | "events">("bulletin");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -75,10 +77,20 @@ export default function CommunityHubPage() {
       setIsFormOpen(false);
       resetForm();
       refetchBulletin();
+      toast.success("Bulletin post created successfully!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to create bulletin post.");
     },
   });
   const deleteBulletin = trpc.bulletin.delete.useMutation({
-    onSuccess: () => refetchBulletin(),
+    onSuccess: () => {
+      refetchBulletin();
+      toast.success("Post deleted successfully.");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to delete post.");
+    },
   });
 
   // Civic
@@ -91,10 +103,20 @@ export default function CommunityHubPage() {
       setIsFormOpen(false);
       resetForm();
       refetchCivic();
+      toast.success("Civic issue reported successfully!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to report civic issue.");
     },
   });
   const updateCivicStatus = trpc.civic.updateStatus.useMutation({
-    onSuccess: () => refetchCivic(),
+    onSuccess: () => {
+      refetchCivic();
+      toast.success("Issue status updated successfully!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update issue status.");
+    },
   });
 
   // Events
@@ -107,10 +129,20 @@ export default function CommunityHubPage() {
       setIsFormOpen(false);
       resetForm();
       refetchEvents();
+      toast.success("Event created successfully!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to create event.");
     },
   });
   const deleteEvent = trpc.events.delete.useMutation({
-    onSuccess: () => refetchEvents(),
+    onSuccess: () => {
+      refetchEvents();
+      toast.success("Event deleted successfully.");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to delete event.");
+    },
   });
 
   const resetForm = () => {
@@ -139,12 +171,13 @@ export default function CommunityHubPage() {
       const data = await res.json();
       if (data.url) {
         setUploadedUrl(data.url);
+        toast.success("Image uploaded successfully!");
       } else {
-        alert(data.error || "Upload failed");
+        toast.error(data.error || "Upload failed");
       }
     } catch (err) {
       console.error(err);
-      alert("Error uploading file");
+      toast.error("Error uploading file");
     } finally {
       setUploading(false);
     }
