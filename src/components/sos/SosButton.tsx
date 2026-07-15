@@ -83,10 +83,19 @@ export function SosButton() {
   };
 
   useEffect(() => {
+    const handleTriggerEvent = () => {
+      if (!session?.user) {
+        setIsAuthModalOpen(true);
+      } else {
+        handleTriggerSos();
+      }
+    };
+    window.addEventListener("trigger-sos", handleTriggerEvent);
     return () => {
+      window.removeEventListener("trigger-sos", handleTriggerEvent);
       if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
     };
-  }, []);
+  }, [session]);
 
   return (
     <>

@@ -32,11 +32,7 @@ export function MobileBottomNav() {
 
   const handleNavClick = (item: (typeof NAV_ITEMS)[number]) => {
     if ("isSos" in item && item.isSos) {
-      // Find the SOS button component and trigger it
-      const sosButton = document.querySelector('[data-sos-trigger="true"]') as HTMLButtonElement;
-      if (sosButton) {
-        sosButton.click();
-      }
+      window.dispatchEvent(new CustomEvent("trigger-sos"));
       return;
     }
     router.push(item.href);
