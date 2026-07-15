@@ -4,7 +4,7 @@ import { APP_NAME, EMERGENCY_NUMBERS } from "@/lib/constants";
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-[var(--app-sidebar-bg)]">
+    <footer className="border-t border-white/10 bg-[var(--app-sidebar-bg)]" role="contentinfo">
       {/* Emergency Numbers — repeated in footer for always-visible requirement */}
       <div className="emergency-strip">
         <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-center gap-6 text-xs font-medium">
@@ -14,6 +14,7 @@ export function Footer() {
               href={`tel:${item.number}`}
               className="flex items-center gap-1.5 transition-colors hover:text-danger"
               style={{ color: item.color }}
+              aria-label={`Call ${item.label} at ${item.number}`}
             >
               <Phone className="h-3 w-3" />
               <span className="hidden sm:inline">{item.label}:</span>
@@ -47,12 +48,12 @@ export function Footer() {
               Essential Services
             </h4>
             <ul className="space-y-2.5 text-sm text-text-secondary">
-              <li><Link href="/services/hospital" className="hover:text-brand-primary transition-colors">Hospitals & Clinics</Link></li>
-              <li><Link href="/services/pharmacy" className="hover:text-brand-primary transition-colors">Pharmacies</Link></li>
-              <li><Link href="/services/police" className="hover:text-brand-primary transition-colors">Police Stations</Link></li>
-              <li><Link href="/services/entertainment" className="hover:text-brand-primary transition-colors">Entertainment</Link></li>
-              <li><Link href="/services/school" className="hover:text-brand-primary transition-colors">Schools & Tuition</Link></li>
-              <li><Link href="/services/atm" className="hover:text-brand-primary transition-colors">ATMs & Banks</Link></li>
+              <li><Link href="/directory?category=HOSPITAL" className="hover:text-brand-primary transition-colors">Hospitals & Clinics</Link></li>
+              <li><Link href="/directory?category=PHARMACY" className="hover:text-brand-primary transition-colors">Pharmacies</Link></li>
+              <li><Link href="/directory?category=POLICE" className="hover:text-brand-primary transition-colors">Police Stations</Link></li>
+              <li><Link href="/directory?category=ENTERTAINMENT" className="hover:text-brand-primary transition-colors">Entertainment</Link></li>
+              <li><Link href="/directory?category=SCHOOL" className="hover:text-brand-primary transition-colors">Schools & Tuition</Link></li>
+              <li><Link href="/directory?category=ATM" className="hover:text-brand-primary transition-colors">ATMs & Banks</Link></li>
             </ul>
           </div>
 
@@ -62,12 +63,12 @@ export function Footer() {
               Local Vendors
             </h4>
             <ul className="space-y-2.5 text-sm text-text-secondary">
-              <li><Link href="/vendors/electrician" className="hover:text-brand-primary transition-colors">Electricians</Link></li>
-              <li><Link href="/vendors/plumber" className="hover:text-brand-primary transition-colors">Plumbers</Link></li>
-              <li><Link href="/vendors/milk" className="hover:text-brand-primary transition-colors">Milk Delivery</Link></li>
-              <li><Link href="/vendors/newspaper" className="hover:text-brand-primary transition-colors">Newspaper</Link></li>
-              <li><Link href="/vendors/maid" className="hover:text-brand-primary transition-colors">Maid / Cook</Link></li>
-              <li><Link href="/vendors/laundry" className="hover:text-brand-primary transition-colors">Laundry</Link></li>
+              <li><Link href="/directory?category=ELECTRICIAN" className="hover:text-brand-primary transition-colors">Electricians</Link></li>
+              <li><Link href="/directory?category=PLUMBER" className="hover:text-brand-primary transition-colors">Plumbers</Link></li>
+              <li><Link href="/directory?category=MILK" className="hover:text-brand-primary transition-colors">Milk Delivery</Link></li>
+              <li><Link href="/directory?category=NEWSPAPER" className="hover:text-brand-primary transition-colors">Newspaper</Link></li>
+              <li><Link href="/directory?category=MAID_COOK" className="hover:text-brand-primary transition-colors">Maid / Cook</Link></li>
+              <li><Link href="/directory?category=LAUNDRY" className="hover:text-brand-primary transition-colors">Laundry</Link></li>
             </ul>
           </div>
 
@@ -77,9 +78,9 @@ export function Footer() {
               Platform
             </h4>
             <ul className="space-y-2.5 text-sm text-text-secondary">
-              <li><Link href="/register-vendor" className="hover:text-brand-primary transition-colors">Register as Vendor</Link></li>
+              <li><Link href="/vendor/register" className="hover:text-brand-primary transition-colors">Register as Vendor</Link></li>
               <li><Link href="/about" className="hover:text-brand-primary transition-colors">About Us</Link></li>
-              <li><Link href="/safety" className="hover:text-brand-primary transition-colors">Safety & Trust</Link></li>
+              <li><Link href="/community" className="hover:text-brand-primary transition-colors">Community Hub</Link></li>
               <li><Link href="/privacy" className="hover:text-brand-primary transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="hover:text-brand-primary transition-colors">Terms of Service</Link></li>
             </ul>

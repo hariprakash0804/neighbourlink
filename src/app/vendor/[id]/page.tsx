@@ -18,6 +18,7 @@ import {
   User as UserIcon,
   Sparkles,
   Flag,
+  Heart,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn, formatPhone, telLink, whatsappLink } from "@/lib/utils";
@@ -136,6 +137,28 @@ function VendorDetailContent() {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewPage, setReviewPage] = useState(1);
 
+  // Favorites queries
+  const { data: favoriteData, refetch: refetchFavorite } = trpc.favorites.check.useQuery(
+    { vendorId },
+    { enabled: !!vendorId && !!session?.user }
+  );
+
+  const toggleFavorite = trpc.favorites.toggle.useMutation({
+    onSuccess: () => {
+      refetchFavorite();
+    },
+  });
+
+  const isFavorited = favoriteData?.favorited || false;
+
+  const handleFavoriteClick = () => {
+    if (!session?.user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    toggleFavorite.mutate({ vendorId });
+  };
+
   // Fetch vendor profile
   const { data: vendorData, isLoading: vendorLoading } = trpc.directory.getVendorById.useQuery(
     { vendorId },
@@ -245,14 +268,29 @@ function VendorDetailContent() {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-brand-primary/15 via-surface-primary/50 to-surface-primary" />
         <div className="relative max-w-2xl mx-auto px-4 pt-6 pb-8">
-          {/* Back button */}
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors mb-6"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back
-          </button>
+          {/* Back button & Favorite Heart */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back
+            </button>
+            <button
+              onClick={handleFavoriteClick}
+              disabled={toggleFavorite.isPending}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-xl transition-all shadow-sm border",
+                isFavorited
+                  ? "bg-danger/10 text-danger border-danger/30"
+                  : "glass hover:bg-white/5 text-text-secondary border-white/10"
+              )}
+              aria-label={isFavorited ? "Remove from saved" : "Save vendor"}
+            >
+              <Heart className={cn("h-4.5 w-4.5", isFavorited && "fill-danger")} />
+            </button>
+          </div>
 
           {/* Vendor Info */}
           <div className="space-y-4">

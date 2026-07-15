@@ -741,6 +741,84 @@ SosAlert.belongsTo(User, { foreignKey: "userId", as: "user" });
 User.hasMany(CivicReport, { foreignKey: "userId", as: "civicReports" });
 CivicReport.belongsTo(User, { foreignKey: "userId", as: "reporter" });
 
+// ─── Favorite ─────────────────────────────────────────────────────────────────
+export class Favorite extends Model<InferAttributes<Favorite>, InferCreationAttributes<Favorite>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare vendorId: string;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare vendor?: Vendor;
+  declare user?: User;
+}
+
+Favorite.init(
+  {
+    id: { type: DataTypes.STRING(50), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+    userId: { type: DataTypes.STRING(50), allowNull: false },
+    vendorId: { type: DataTypes.STRING(50), allowNull: false },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  {
+    sequelize,
+    modelName: "Favorite",
+    tableName: "favorites",
+    indexes: [
+      { unique: true, fields: ["userId", "vendorId"] },
+    ],
+  }
+);
+
+User.hasMany(Favorite, { foreignKey: "userId", as: "favorites" });
+Favorite.belongsTo(User, { foreignKey: "userId", as: "user" });
+Vendor.hasMany(Favorite, { foreignKey: "vendorId", as: "favorites" });
+Favorite.belongsTo(Vendor, { foreignKey: "vendorId", as: "vendor" });
+
+// ─── Notification ─────────────────────────────────────────────────────────────
+export const NOTIFICATION_TYPES = ["BOOKING_UPDATE", "NEW_REVIEW", "NEW_MESSAGE", "SYSTEM", "VENDOR_VERIFIED"] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+export class Notification extends Model<InferAttributes<Notification>, InferCreationAttributes<Notification>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare type: NotificationType;
+  declare title: string;
+  declare body: string;
+  declare read: CreationOptional<boolean>;
+  declare metadata: CreationOptional<object | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+Notification.init(
+  {
+    id: { type: DataTypes.STRING(50), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+    userId: { type: DataTypes.STRING(50), allowNull: false },
+    type: { type: DataTypes.STRING(30), allowNull: false },
+    title: { type: DataTypes.STRING(255), allowNull: false },
+    body: { type: DataTypes.TEXT, allowNull: false },
+    read: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    metadata: { type: DataTypes.JSON, allowNull: true },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  {
+    sequelize,
+    modelName: "Notification",
+    tableName: "notifications",
+    indexes: [
+      { fields: ["userId", "read"] },
+      { fields: ["createdAt"] },
+    ],
+  }
+);
+
+User.hasMany(Notification, { foreignKey: "userId", as: "notifications" });
+Notification.belongsTo(User, { foreignKey: "userId", as: "user" });
+
 // ─── Sync helper (dev only) ──────────────────────────────────────────────────
 export async function syncDatabase(force = false) {
   await sequelize.sync({ force, alter: !force });
@@ -748,3 +826,4 @@ export async function syncDatabase(force = false) {
 }
 
 export { sequelize };
+

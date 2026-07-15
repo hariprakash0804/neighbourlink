@@ -12,6 +12,8 @@ import { civicRouter } from "./civic";
 import { bulletinRouter } from "./bulletin";
 import { eventsRouter } from "./events";
 import { sosRouter } from "./sos";
+import { favoritesRouter } from "./favorites";
+import { notificationsRouter } from "./notifications";
 
 export const appRouter = router({
   auth: authRouter,
@@ -27,6 +29,8 @@ export const appRouter = router({
   bulletin: bulletinRouter,
   events: eventsRouter,
   sos: sosRouter,
+  favorites: favoritesRouter,
+  notifications: notificationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

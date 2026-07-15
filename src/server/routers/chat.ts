@@ -4,6 +4,7 @@ import { ChatMessage, User, Vendor } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
 import { Op } from "sequelize";
 import { containsProfanityOrSpam } from "@/lib/moderation";
+import { createNotification } from "./notifications";
 
 export const chatRouter = router({
   /**
@@ -44,6 +45,16 @@ export const chatRouter = router({
         recipientId: input.recipientId,
         content: input.content,
         readAt: null,
+      });
+
+      // Notify the recipient
+      const sender = await User.findByPk(senderId, { attributes: ["name"] });
+      await createNotification({
+        userId: input.recipientId,
+        type: "NEW_MESSAGE",
+        title: "New Message",
+        body: `${sender?.name || "Someone"}: ${input.content.slice(0, 100)}${input.content.length > 100 ? "..." : ""}`,
+        metadata: { senderId, messageId: msg.id },
       });
 
       return {

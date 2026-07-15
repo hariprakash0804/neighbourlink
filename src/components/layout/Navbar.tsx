@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,13 +21,17 @@ import {
   Settings,
   CalendarDays,
   MessageSquare,
+  Bell,
+  Heart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EMERGENCY_NUMBERS, APP_NAME } from "@/lib/constants";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { LocationModal } from "@/components/location/LocationModal";
+import { trpc } from "@/lib/trpc";
 
 export function Navbar() {
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -34,21 +39,88 @@ export function Navbar() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentLocation, setCurrentLocation] = useState<{
     locality: string;
     pincode: string;
   } | null>(null);
 
+  const isAuthenticated = status === "authenticated" && session?.user;
+
+  // Unread notifications query
+  const { data: unreadData } = trpc.notifications.unreadCount.useQuery(undefined, {
+    enabled: !!isAuthenticated,
+    refetchInterval: 15000, // Refetch every 15 seconds to stay updated
+  });
+
+  // Refs for click-outside detection
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const isAuthenticated = status === "authenticated" && session?.user;
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileOpen(false);
+      }
+    }
+
+    if (isProfileOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isProfileOpen]);
+
+  // Close profile dropdown on Escape key
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsProfileOpen(false);
+        setIsMobileMenuOpen(false);
+      }
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, []);
+
+
+
+  // Handle search submission
+  const handleSearch = useCallback(
+    (e: React.FormEvent | React.KeyboardEvent) => {
+      e.preventDefault();
+      if (searchQuery.trim()) {
+        router.push(`/directory?query=${encodeURIComponent(searchQuery.trim())}`);
+        setIsMobileMenuOpen(false);
+      }
+    },
+    [searchQuery, router]
+  );
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch(e);
+    }
+  };
 
   return (
     <>
+      {/* Skip to main content — accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-brand-primary focus:text-white focus:text-sm focus:font-semibold"
+      >
+        Skip to main content
+      </a>
+
       {/* Emergency Numbers Strip — always visible, never behind auth */}
-      <div className="emergency-strip">
+      <div className="emergency-strip" role="banner" aria-label="Emergency contact numbers">
         <div className="mx-auto max-w-7xl px-4 py-1.5 flex items-center justify-center gap-6 text-xs font-medium">
           {EMERGENCY_NUMBERS.map((item) => (
             <a
@@ -56,6 +128,7 @@ export function Navbar() {
               href={`tel:${item.number}`}
               className="flex items-center gap-1.5 transition-colors hover:text-danger"
               style={{ color: item.color }}
+              aria-label={`Call ${item.label} at ${item.number}`}
             >
               <Phone className="h-3 w-3" />
               <span>{item.label}:</span>
@@ -66,11 +139,11 @@ export function Navbar() {
       </div>
 
       {/* Main Navbar — Glassmorphism */}
-      <header className="sticky top-0 z-50 glass-strong">
+      <header className="sticky top-0 z-50 glass-strong" role="navigation" aria-label="Main navigation">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 shrink-0">
+            <Link href="/" className="flex items-center gap-2.5 shrink-0" aria-label={`${APP_NAME} — go to homepage`}>
               <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-primary to-brand-accent shadow-lg">
                 <MapPin className="h-5 w-5 text-white" />
                 <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-success border-2 border-white dark:border-surface-primary" />
@@ -94,6 +167,12 @@ export function Navbar() {
               >
                 Community Hub
               </Link>
+              <Link
+                href="/about"
+                className="px-3.5 py-1.5 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-full transition-all"
+              >
+                About
+              </Link>
             </div>
 
             {/* Location Switcher — Glass dropdown */}
@@ -107,6 +186,7 @@ export function Navbar() {
                   }
                 }}
                 className="flex items-center gap-2 rounded-full px-4 py-2 text-sm glass transition-all hover:scale-[1.02]"
+                aria-label="Change location"
               >
                 <MapPin className="h-4 w-4 text-brand-primary" />
                 <span className="text-text-secondary max-w-[160px] truncate">
@@ -124,8 +204,12 @@ export function Navbar() {
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
                 <input
                   type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
                   placeholder="Search services, vendors, places..."
                   className="w-full rounded-full py-2.5 pl-10 pr-4 text-sm glass transition-all focus:outline-none focus:ring-2 focus:ring-brand-primary/30 placeholder:text-text-muted"
+                  aria-label="Search services and vendors"
                 />
               </div>
             </div>
@@ -136,7 +220,7 @@ export function Navbar() {
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="neu-button flex h-10 w-10 items-center justify-center"
-                aria-label="Toggle dark mode"
+                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
               >
                 {mounted ? (
                   <AnimatePresence mode="wait">
@@ -167,12 +251,33 @@ export function Navbar() {
                 )}
               </button>
 
+              {/* Notification Bell (authenticated only) */}
+              {isAuthenticated && (
+                <Link
+                  href="/notifications"
+                  className="neu-button flex h-10 w-10 items-center justify-center relative"
+                  aria-label="View notifications"
+                >
+                  <Bell className="h-4.5 w-4.5 text-text-secondary" />
+                  {unreadData && unreadData.count > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white shadow-sm">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-danger opacity-75 badge-pulse" />
+                      <span className="relative">{unreadData.count}</span>
+                    </span>
+                  )}
+                </Link>
+              )}
+
               {/* Auth / Profile */}
               {isAuthenticated ? (
-                <div className="relative">
+                <div className="relative" ref={profileDropdownRef}>
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                     className="flex items-center gap-2 rounded-full glass px-3 py-2 transition-all hover:scale-[1.02]"
+                    aria-expanded={isProfileOpen}
+                    aria-haspopup="true"
+                    aria-label="User menu"
+                    id="profile-menu-button"
                   >
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-brand-primary to-brand-accent text-white text-xs font-bold">
                       {session.user.name
@@ -196,6 +301,8 @@ export function Navbar() {
                         exit={{ opacity: 0, y: -8, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
                         className="absolute top-full right-0 mt-2 w-56 rounded-2xl glass-strong shadow-elevated z-50 overflow-hidden"
+                        role="menu"
+                        aria-labelledby="profile-menu-button"
                       >
                         {/* Profile header */}
                         <div className="px-4 py-3 border-b border-white/5">
@@ -213,6 +320,7 @@ export function Navbar() {
                             href="/profile"
                             onClick={() => setIsProfileOpen(false)}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors font-semibold border-b border-white/5"
+                            role="menuitem"
                           >
                             <User className="h-4 w-4 text-brand-primary" />
                             <span>My Profile</span>
@@ -221,11 +329,30 @@ export function Navbar() {
                             href={session.user.role === "VENDOR" ? "/vendor/dashboard" : "/bookings"}
                             onClick={() => setIsProfileOpen(false)}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                            role="menuitem"
                           >
-                            <User className="h-4 w-4" />
+                            <CalendarDays className="h-4 w-4" />
                             <span>
                               {session.user.role === "VENDOR" ? "Vendor Dashboard" : "My Bookings"}
                             </span>
+                          </Link>
+                          <Link
+                            href="/favorites"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                            role="menuitem"
+                          >
+                            <Heart className="h-4 w-4" />
+                            <span>Saved Vendors</span>
+                          </Link>
+                          <Link
+                            href="/notifications"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                            role="menuitem"
+                          >
+                            <Bell className="h-4 w-4" />
+                            <span>Notifications</span>
                           </Link>
                           <button
                             onClick={() => {
@@ -233,6 +360,7 @@ export function Navbar() {
                               setIsLocationModalOpen(true);
                             }}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                            role="menuitem"
                           >
                             <MapPin className="h-4 w-4" />
                             <span>My Addresses</span>
@@ -241,6 +369,7 @@ export function Navbar() {
                             href="/community"
                             onClick={() => setIsProfileOpen(false)}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                            role="menuitem"
                           >
                             <MessageSquare className="h-4 w-4 text-brand-primary" />
                             <span>Community Hub</span>
@@ -249,6 +378,7 @@ export function Navbar() {
                             href="/chat"
                             onClick={() => setIsProfileOpen(false)}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                            role="menuitem"
                           >
                             <MessageSquare className="h-4 w-4 text-brand-primary" />
                             <span>Chat Inbox</span>
@@ -258,6 +388,7 @@ export function Navbar() {
                               href="/vendor/register"
                               onClick={() => setIsProfileOpen(false)}
                               className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-brand-primary hover:bg-white/5 transition-colors font-semibold"
+                              role="menuitem"
                             >
                               <Settings className="h-4 w-4" />
                               <span>Register as Vendor</span>
@@ -272,6 +403,7 @@ export function Navbar() {
                               signOut();
                             }}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors"
+                            role="menuitem"
                           >
                             <LogOut className="h-4 w-4" />
                             <span>Sign Out</span>
@@ -296,6 +428,7 @@ export function Navbar() {
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="flex md:hidden h-10 w-10 items-center justify-center rounded-xl glass"
                 aria-label="Toggle menu"
+                aria-expanded={isMobileMenuOpen}
               >
                 {isMobileMenuOpen ? (
                   <X className="h-5 w-5" />
@@ -323,9 +456,41 @@ export function Navbar() {
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
                   <input
                     type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
                     placeholder="Search services, vendors..."
                     className="w-full rounded-xl py-3 pl-10 pr-4 text-sm glass focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+                    aria-label="Search services and vendors"
                   />
+                </div>
+
+                {/* Mobile Navigation Links */}
+                <div className="flex flex-col gap-1">
+                  <Link
+                    href="/directory"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-secondary hover:bg-white/5 transition-colors"
+                  >
+                    <Search className="h-4 w-4 text-brand-primary" />
+                    Directory
+                  </Link>
+                  <Link
+                    href="/community"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-secondary hover:bg-white/5 transition-colors"
+                  >
+                    <MessageSquare className="h-4 w-4 text-brand-primary" />
+                    Community Hub
+                  </Link>
+                  <Link
+                    href="/about"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-secondary hover:bg-white/5 transition-colors"
+                  >
+                    <User className="h-4 w-4 text-brand-primary" />
+                    About
+                  </Link>
                 </div>
 
                 {/* Mobile Location */}

@@ -2,6 +2,7 @@ import { router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { Booking, Vendor, User } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
+import { createNotification } from "./notifications";
 
 export const bookingRouter = router({
   /**
@@ -35,6 +36,15 @@ export const bookingRouter = router({
         slotStart: new Date(input.slotStart),
         notes: input.notes || null,
         status: "PENDING",
+      });
+
+      // Notify the vendor about the new booking
+      await createNotification({
+        userId: vendor.userId,
+        type: "BOOKING_UPDATE",
+        title: "New Booking Request",
+        body: `A resident has requested a booking for ${new Date(input.slotStart).toLocaleDateString("en-IN", { dateStyle: "medium" })}.`,
+        metadata: { bookingId: booking.id, vendorId: input.vendorId },
       });
 
       return { success: true, bookingId: booking.id };
@@ -94,6 +104,36 @@ export const bookingRouter = router({
 
       // Update status
       await booking.update({ status: input.status });
+
+      // Notify the relevant party about the status change
+      const statusMessages: Record<string, string> = {
+        ACCEPTED: "Your booking has been accepted!",
+        DECLINED: "Your booking has been declined.",
+        COMPLETED: "Your booking has been marked as completed.",
+        CANCELLED: "A booking has been cancelled.",
+      };
+
+      // Notify the resident for vendor actions, notify vendor for resident actions
+      if (input.status === "ACCEPTED" || input.status === "DECLINED" || input.status === "COMPLETED") {
+        await createNotification({
+          userId: booking.residentId,
+          type: "BOOKING_UPDATE",
+          title: `Booking ${input.status.charAt(0) + input.status.slice(1).toLowerCase()}`,
+          body: statusMessages[input.status],
+          metadata: { bookingId: booking.id },
+        });
+      } else if (input.status === "CANCELLED") {
+        const vendor = await Vendor.findByPk(booking.vendorId);
+        if (vendor) {
+          await createNotification({
+            userId: vendor.userId,
+            type: "BOOKING_UPDATE",
+            title: "Booking Cancelled",
+            body: statusMessages[input.status],
+            metadata: { bookingId: booking.id },
+          });
+        }
+      }
 
       return { success: true };
     }),

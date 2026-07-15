@@ -4,6 +4,7 @@ import { Review, Vendor, User } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
 import { enqueueRatingRecompute } from "@/lib/queue";
 import { containsProfanityOrSpam } from "@/lib/moderation";
+import { createNotification } from "./notifications";
 
 export const reviewRouter = router({
   /**
@@ -73,6 +74,15 @@ export const reviewRouter = router({
 
       // 6. Fetch reviewer name for the response
       const user = await User.findByPk(userId, { attributes: ["name"] });
+
+      // 7. Notify the vendor about the new review
+      await createNotification({
+        userId: vendor.userId,
+        type: "NEW_REVIEW",
+        title: "New Review Received",
+        body: `${user?.name || "A resident"} left a ${input.rating}-star review${input.comment ? " with a comment" : ""}.`,
+        metadata: { reviewId: review.id, vendorId: input.vendorId, rating: input.rating },
+      });
 
       return {
         success: true,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   MapPin,
@@ -36,6 +37,23 @@ const itemVariants = {
 
 export default function HomePage() {
   const router = useRouter();
+  const [heroInput, setHeroInput] = useState("");
+
+  const handleExplore = () => {
+    const query = heroInput.trim();
+    if (query) {
+      router.push(`/directory?query=${encodeURIComponent(query)}`);
+    } else {
+      router.push("/directory");
+    }
+  };
+
+  const handleHeroKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleExplore();
+    }
+  };
+
   return (
     <div className="relative">
       {/* ═══════════════════════════════════════════════════════════════════════
@@ -114,11 +132,18 @@ export default function HomePage() {
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-primary" />
                 <input
                   type="text"
+                  value={heroInput}
+                  onChange={(e) => setHeroInput(e.target.value)}
+                  onKeyDown={handleHeroKeyDown}
                   placeholder="Enter your pincode or locality..."
                   className="w-full rounded-2xl py-4 pl-12 pr-4 text-base glass-strong shadow-elevated focus:outline-none focus:ring-2 focus:ring-brand-primary/40 placeholder:text-text-muted"
+                  aria-label="Enter your pincode or locality to explore"
                 />
               </div>
-              <button className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-primary to-brand-accent px-8 py-4 text-base font-semibold text-white shadow-lg shadow-brand-primary/25 transition-all hover:shadow-xl hover:shadow-brand-primary/30 hover:scale-[1.02] active:scale-[0.98] magnetic-hover">
+              <button
+                onClick={handleExplore}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-primary to-brand-accent px-8 py-4 text-base font-semibold text-white shadow-lg shadow-brand-primary/25 transition-all hover:shadow-xl hover:shadow-brand-primary/30 hover:scale-[1.02] active:scale-[0.98] magnetic-hover"
+              >
                 <span>Explore</span>
                 <ArrowRight className="h-5 w-5" />
               </button>
@@ -256,7 +281,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════════════════
           HOW IT WORKS — Steps
          ═══════════════════════════════════════════════════════════════════════ */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
+      <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-16">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -414,11 +439,19 @@ export default function HomePage() {
               and grow your business with our booking and review system.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
-              <button className="flex items-center gap-2 rounded-2xl bg-white px-8 py-3.5 text-sm font-bold text-brand-primary shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]">
+              <button
+                onClick={() => router.push("/vendor/register")}
+                className="flex items-center gap-2 rounded-2xl bg-white px-8 py-3.5 text-sm font-bold text-brand-primary shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]"
+              >
                 <span>Register Now</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
-              <button className="flex items-center gap-2 rounded-2xl border-2 border-white/30 px-8 py-3.5 text-sm font-semibold text-white transition-all hover:bg-white/10 hover:border-white/50">
+              <button
+                onClick={() => {
+                  document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="flex items-center gap-2 rounded-2xl border-2 border-white/30 px-8 py-3.5 text-sm font-semibold text-white transition-all hover:bg-white/10 hover:border-white/50"
+              >
                 Learn More
               </button>
             </div>

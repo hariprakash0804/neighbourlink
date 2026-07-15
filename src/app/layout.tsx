@@ -10,6 +10,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SosButton } from "@/components/sos/SosButton";
+import { ToastProvider } from "@/components/providers/ToastProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -65,29 +66,31 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <TRPCProvider>
-              <div className="flex min-h-screen flex-col">
-                {/* Top navigation — glassmorphism */}
-                <Navbar />
+              <ToastProvider>
+                <div className="flex min-h-screen flex-col">
+                  {/* Top navigation — glassmorphism */}
+                  <Navbar />
 
-                {/* Main content area with sidebar */}
-                <div className="flex flex-1">
-                  <Suspense fallback={<div className="w-[var(--app-sidebar-width)] hidden lg:block shrink-0 bg-[var(--app-sidebar-bg)] border-r border-white/10" />}>
-                    <Sidebar />
-                  </Suspense>
-                  <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
-                    {children}
-                  </main>
+                  {/* Main content area with sidebar */}
+                  <div className="flex flex-1">
+                    <Suspense fallback={<div className="w-[var(--app-sidebar-width)] hidden lg:block shrink-0 bg-[var(--app-sidebar-bg)] border-r border-white/10" />}>
+                      <Sidebar />
+                    </Suspense>
+                    <main id="main-content" className="flex-1 overflow-y-auto pb-20 lg:pb-0" role="main">
+                      {children}
+                    </main>
+                  </div>
+
+                  {/* Footer */}
+                  <Footer />
+
+                  {/* Mobile bottom nav */}
+                  <MobileBottomNav />
+
+                  {/* Global floating emergency SOS Alert button */}
+                  <SosButton />
                 </div>
-
-                {/* Footer */}
-                <Footer />
-
-                {/* Mobile bottom nav */}
-                <MobileBottomNav />
-
-                {/* Global floating emergency SOS Alert button */}
-                <SosButton />
-              </div>
+              </ToastProvider>
             </TRPCProvider>
           </ThemeProvider>
         </AuthProvider>

@@ -1,23 +1,53 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Home, Search, AlertTriangle, CalendarDays, User } from "lucide-react";
+import { Home, Search, AlertTriangle, CalendarDays, User, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 const NAV_ITEMS = [
-  { id: "home", label: "Home", icon: Home },
-  { id: "search", label: "Search", icon: Search },
-  { id: "sos", label: "SOS", icon: AlertTriangle, isSos: true },
-  { id: "bookings", label: "Bookings", icon: CalendarDays },
-  { id: "profile", label: "Profile", icon: User },
+  { id: "home", label: "Home", icon: Home, href: "/" },
+  { id: "search", label: "Directory", icon: Search, href: "/directory" },
+  { id: "sos", label: "SOS", icon: AlertTriangle, isSos: true, href: "#" },
+  { id: "bookings", label: "Bookings", icon: CalendarDays, href: "/bookings" },
+  { id: "profile", label: "Profile", icon: User, href: "/profile" },
 ] as const;
 
 export function MobileBottomNav() {
-  const [activeTab, setActiveTab] = useState("home");
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Determine active tab from current pathname
+  const getActiveTab = () => {
+    if (pathname === "/") return "home";
+    if (pathname.startsWith("/directory") || pathname.startsWith("/vendor")) return "search";
+    if (pathname.startsWith("/bookings")) return "bookings";
+    if (pathname.startsWith("/profile")) return "profile";
+    if (pathname.startsWith("/notifications")) return "notifications";
+    return "home";
+  };
+
+  const activeTab = getActiveTab();
+
+  const handleNavClick = (item: (typeof NAV_ITEMS)[number]) => {
+    if ("isSos" in item && item.isSos) {
+      // Find the SOS button component and trigger it
+      const sosButton = document.querySelector('[data-sos-trigger="true"]') as HTMLButtonElement;
+      if (sosButton) {
+        sosButton.click();
+      }
+      return;
+    }
+    router.push(item.href);
+  };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden glass-strong border-t border-white/10">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 lg:hidden glass-strong border-t border-white/10"
+      role="navigation"
+      aria-label="Mobile navigation"
+    >
       <div className="flex items-center justify-around px-2" style={{ height: "var(--app-mobile-nav-height)" }}>
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
@@ -27,7 +57,9 @@ export function MobileBottomNav() {
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => handleNavClick(item)}
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "relative flex flex-col items-center justify-center gap-1 w-16 py-1.5 rounded-2xl transition-all",
                 isSos && "relative -mt-5"
@@ -35,7 +67,7 @@ export function MobileBottomNav() {
             >
               {isSos ? (
                 /* SOS Button — Skeuomorphic, raised red */
-                <div className="sos-button flex h-14 w-14 items-center justify-center text-white">
+                <div className="sos-button sos-pulse flex h-14 w-14 items-center justify-center text-white">
                   <Icon className="h-6 w-6" />
                 </div>
               ) : (
