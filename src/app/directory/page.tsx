@@ -25,11 +25,13 @@ import { ESSENTIAL_CATEGORY_META, VENDOR_CATEGORY_META } from "@/lib/constants";
 import { Map } from "@/components/map/Map";
 import { useSession } from "next-auth/react";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { useToast } from "@/components/providers/ToastProvider";
 
 function DirectoryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
+  const toast = useToast();
   
   // Auth & Booking states
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -72,13 +74,15 @@ function DirectoryContent() {
         slotStart: slotStart.toISOString(),
         notes: bookingNotes,
       });
+      toast.success("Booking request sent successfully!", "The vendor will review and accept your booking.");
       setBookingSuccess(true);
       setTimeout(() => {
         setBookingVendor(null);
         setBookingSuccess(false);
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Booking error:", err);
+      toast.error(err.message || "Failed to submit booking request.");
     }
   };
 
