@@ -188,4 +188,37 @@ export const vendorRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Get logged-in vendor's own profile details
+   */
+  getOwnProfile: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.userId;
+    const vendor = await Vendor.findOne({ where: { userId } });
+    if (!vendor) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Vendor profile not found for this user.",
+      });
+    }
+    return {
+      id: vendor.id,
+      userId: vendor.userId,
+      category: vendor.category,
+      businessName: vendor.businessName,
+      description: vendor.description,
+      lat: vendor.lat,
+      lng: vendor.lng,
+      serviceRadiusM: vendor.serviceRadiusM,
+      priceInfo: vendor.priceInfo,
+      workingHours: vendor.workingHours,
+      verificationTier: vendor.verificationTier,
+      idDocumentUrl: vendor.idDocumentUrl,
+      ratingAvg: vendor.ratingAvg,
+      ratingCount: vendor.ratingCount,
+      responseTimeMin: vendor.responseTimeMin,
+      createdAt: vendor.createdAt.toISOString(),
+    };
+  }),
 });
+

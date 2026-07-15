@@ -134,6 +134,22 @@
   --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
+/* ─── Smooth Theme Transition ──────────────────────────────────────────────── */
+:root,
+.dark {
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+}
+
+.glass,
+.glass-strong,
+.glass-subtle,
+.clay-card,
+.neu-raised,
+.neu-inset,
+.neu-button {
+  transition: background 0.35s ease, box-shadow 0.35s ease, color 0.35s ease, border-color 0.35s ease, transform 0.3s ease;
+}
+
 /* ─── Base Styles ──────────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
@@ -720,4 +736,220 @@ textarea:focus-visible {
   background: var(--color-text-muted);
   border-radius: var(--radius-full);
   opacity: 0.5;
+}
+
+/* ─── Hero Floating Particles ──────────────────────────────────────────────── */
+.hero-particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--color-brand-primary);
+  opacity: 0.12;
+  animation: particle-drift linear infinite;
+}
+
+.dark .hero-particle {
+  opacity: 0.18;
+}
+
+@keyframes particle-drift {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.15;
+  }
+  90% {
+    opacity: 0.15;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(40px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* ─── Typewriter Cursor ────────────────────────────────────────────────────── */
+.typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: var(--color-brand-primary);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: cursor-blink 1s steps(2) infinite;
+}
+
+@keyframes cursor-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ─── Input Glow Ring ──────────────────────────────────────────────────────── */
+.input-glow {
+  position: relative;
+}
+
+.input-glow::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent), var(--color-aurora-5), var(--color-brand-primary));
+  background-size: 300% 300%;
+  animation: glow-rotate 4s ease infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.input-glow:focus-within::before {
+  opacity: 0.6;
+}
+
+@keyframes glow-rotate {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ─── Command Palette ──────────────────────────────────────────────────────── */
+.command-palette-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dark .command-palette-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.command-palette-item:hover,
+.command-palette-item[data-active="true"] {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.dark .command-palette-item:hover,
+.dark .command-palette-item[data-active="true"] {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+/* ─── Emergency Strip Marquee (mobile) ─────────────────────────────────────── */
+@media (max-width: 640px) {
+  .emergency-strip-inner {
+    animation: marquee-scroll 20s linear infinite;
+  }
+
+  @keyframes marquee-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+}
+
+/* ─── Open/Closed Badge ────────────────────────────────────────────────────── */
+.status-open {
+  color: var(--color-success);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-closed {
+  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* ─── Emoji Picker Button ──────────────────────────────────────────────────── */
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+}
+
+.emoji-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.emoji-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+  transform: scale(1.15);
+}
+
+/* ─── Timeline ─────────────────────────────────────────────────────────────── */
+.timeline-line {
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--color-brand-primary), var(--color-brand-accent), transparent);
+}
+
+.timeline-dot {
+  position: absolute;
+  left: 8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid var(--app-bg);
+  z-index: 1;
+}
+
+/* ─── Countdown Timer ──────────────────────────────────────────────────────── */
+.countdown-segment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 40px;
+}
+
+.countdown-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+/* ─── Print Styles ─────────────────────────────────────────────────────────── */
+@media print {
+  nav,
+  aside,
+  footer,
+  .sos-button,
+  .scroll-top-btn,
+  .mobile-bottom-nav,
+  .quick-actions-fab,
+  .emergency-strip {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .glass,
+  .glass-strong,
+  .clay-card {
+    background: white !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
 }

@@ -14,6 +14,7 @@ import { eventsRouter } from "./events";
 import { sosRouter } from "./sos";
 import { favoritesRouter } from "./favorites";
 import { notificationsRouter } from "./notifications";
+import { dealsRouter } from "./deals";
 
 export const appRouter = router({
   auth: authRouter,
@@ -31,6 +32,7 @@ export const appRouter = router({
   sos: sosRouter,
   favorites: favoritesRouter,
   notifications: notificationsRouter,
+  deals: dealsRouter,
 });
 
 export type AppRouter = typeof appRouter;

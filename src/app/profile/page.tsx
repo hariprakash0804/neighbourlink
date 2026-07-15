@@ -4,9 +4,27 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User as UserIcon, Mail, Phone, ShieldCheck, CheckCircle2, ChevronLeft, Save } from "lucide-react";
+import {
+  User as UserIcon,
+  Mail,
+  Phone,
+  ShieldCheck,
+  CheckCircle2,
+  ChevronLeft,
+  Save,
+  Calendar,
+  Star,
+  Heart,
+  MessageSquare,
+  Clock,
+  MapPin,
+  Bell,
+  ChevronRight,
+  AlertTriangle,
+} from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { data: session, status, update: updateSession } = useSession();
@@ -97,45 +115,175 @@ export default function ProfilePage() {
     );
   }
 
+  // Days since joining
+  const daysSinceJoining = profile?.createdAt
+    ? Math.floor((Date.now() - new Date(profile.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  // Get initial for avatar
+  const initial = (profile?.name || profile?.phone || "U").charAt(0).toUpperCase();
+
+  // Quick links
+  const quickLinks = [
+    { label: "My Bookings", href: "/bookings", icon: Calendar, color: "#6366f1" },
+    { label: "Saved Vendors", href: "/favorites", icon: Heart, color: "#ef4444" },
+    { label: "Chat Inbox", href: "/chat", icon: MessageSquare, color: "#10b981" },
+    { label: "Notifications", href: "/notifications", icon: Bell, color: "#f59e0b" },
+  ];
+
   return (
     <div className="min-h-screen bg-surface-primary text-text-primary pb-24">
-      {/* Header */}
+      {/* Header with gradient avatar background */}
       <div className="border-b border-white/5 bg-surface-secondary/20 relative overflow-hidden">
-        <div className="max-w-xl mx-auto px-4 py-8 relative flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="flex h-9 w-9 items-center justify-center rounded-xl glass hover:bg-white/5 text-text-secondary transition-all"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="text-lg font-black tracking-tight flex items-center gap-1.5">
-              <UserIcon className="h-5 w-5 text-brand-primary" />
-              Profile Settings
-            </h1>
-            <p className="text-xs text-text-secondary">
-              Update your registration details, name, and notification email.
-            </p>
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/5 via-transparent to-brand-accent/5" />
+        <div className="max-w-xl mx-auto px-4 py-8 relative">
+          <div className="flex items-center gap-3 mb-6">
+            <button
+              onClick={() => router.back()}
+              className="flex h-9 w-9 items-center justify-center rounded-xl glass hover:bg-white/5 text-text-secondary transition-all"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <h1 className="text-lg font-black tracking-tight flex items-center gap-1.5">
+                <UserIcon className="h-5 w-5 text-brand-primary" />
+                Profile Settings
+              </h1>
+              <p className="text-xs text-text-secondary">
+                Update your registration details, name, and notification email.
+              </p>
+            </div>
+          </div>
+
+          {/* Avatar + Name Card */}
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-primary to-brand-accent text-white text-2xl font-black shadow-lg">
+              {initial}
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-text-primary">
+                {profile?.name || "Set your name"}
+              </h2>
+              <p className="text-xs text-text-muted flex items-center gap-1 mt-0.5">
+                <Phone className="h-3 w-3" />
+                {profile?.phone || "—"}
+              </p>
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className="text-[10px] uppercase font-black tracking-wider text-brand-primary bg-brand-primary/10 px-2.5 py-0.5 rounded-full border border-brand-primary/20">
+                  {profile?.role}
+                </span>
+                <span className="flex items-center gap-0.5 text-[10px] text-success font-bold">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Verified
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-xl mx-auto px-4 mt-8">
+      <div className="max-w-xl mx-auto px-4 mt-6 space-y-5">
+        {/* Activity Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 gap-3"
+        >
+          {[
+            {
+              icon: Calendar,
+              label: "Member Since",
+              value: daysSinceJoining > 0 ? `${daysSinceJoining}d` : "Today",
+              color: "#6366f1",
+            },
+            {
+              icon: Star,
+              label: "Role Status",
+              value: profile?.role === "VENDOR" ? "Vendor" : "Resident",
+              color: "#f59e0b",
+            },
+            {
+              icon: ShieldCheck,
+              label: "Verification",
+              value: "Verified",
+              color: "#10b981",
+            },
+            {
+              icon: Clock,
+              label: "Last Active",
+              value: "Now",
+              color: "#8b5cf6",
+            },
+          ].map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={stat.label}
+                className="glass rounded-2xl p-4 flex items-center gap-3"
+              >
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
+                  style={{ backgroundColor: `${stat.color}15` }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: stat.color }} />
+                </div>
+                <div>
+                  <p className="text-[10px] text-text-muted font-medium uppercase tracking-wider">
+                    {stat.label}
+                  </p>
+                  <p className="text-sm font-bold text-text-primary">{stat.value}</p>
+                </div>
+              </div>
+            );
+          })}
+        </motion.div>
+
+        {/* Quick Links */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="clay-card p-4"
+        >
+          <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">
+            Quick Links
+          </h3>
+          <div className="space-y-1">
+            {quickLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <button
+                  key={link.label}
+                  onClick={() => router.push(link.href)}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all text-left group"
+                >
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+                    style={{ backgroundColor: `${link.color}15` }}
+                  >
+                    <Icon className="h-4.5 w-4.5" style={{ color: link.color }} />
+                  </div>
+                  <span className="text-sm font-medium text-text-primary flex-1">
+                    {link.label}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-text-muted group-hover:text-text-secondary transition-colors" />
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Edit Profile Form */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
           className="clay-card p-6 md:p-8 space-y-6"
         >
-          {/* User Role Badge */}
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-black tracking-wider text-brand-primary bg-brand-primary/10 px-3 py-1 rounded-full border border-brand-primary/20">
-              Account Role: {profile?.role}
-            </span>
-            <div className="flex items-center gap-1 text-[10px] text-success font-bold">
-              <ShieldCheck className="h-4 w-4" />
-              <span>Verified Account</span>
-            </div>
-          </div>
+          <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">
+            Edit Profile
+          </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Phone Number (Disabled) */}
@@ -194,11 +342,11 @@ export default function ProfilePage() {
             )}
 
             {/* Submit Button */}
-            <div className="pt-2 flex items-center justify-between gap-4">
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={updateProfileMutation.isPending}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-brand-primary py-3.5 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-[0.98] transition-all"
+                className="w-full flex items-center justify-center gap-1.5 rounded-2xl bg-brand-primary py-3.5 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-[0.98] transition-all"
               >
                 {updateProfileMutation.isPending ? (
                   <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
@@ -223,6 +371,31 @@ export default function ProfilePage() {
               <span>Profile updated successfully! Session cached.</span>
             </motion.div>
           )}
+        </motion.div>
+
+        {/* Danger Zone */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="glass rounded-2xl p-5 border border-danger/10"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="h-4 w-4 text-danger" />
+            <h3 className="text-xs font-bold text-danger uppercase tracking-wider">Danger Zone</h3>
+          </div>
+          <p className="text-xs text-text-muted mb-4 leading-relaxed">
+            If you wish to delete your account and all associated data, please contact support. This action is irreversible.
+          </p>
+          <button
+            className="rounded-xl border border-danger/20 text-danger text-xs font-bold px-4 py-2.5 hover:bg-danger/5 transition-all"
+            onClick={() => {
+              // In production, this would open a support ticket or confirmation modal
+              window.alert("Please contact support at support@neighborlink.in to request account deletion.");
+            }}
+          >
+            Request Account Deletion
+          </button>
         </motion.div>
       </div>
     </div>

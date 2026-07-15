@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Home, Search, AlertTriangle, Megaphone, CalendarDays, User } from "lucide-react";
+import { Home, Search, AlertTriangle, MessageSquare, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useSession } from "next-auth/react";
@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home, href: "/" },
   { id: "search", label: "Directory", icon: Search, href: "/directory" },
   { id: "sos", label: "SOS", icon: AlertTriangle, isSos: true, href: "#" },
-  { id: "community", label: "Community", icon: Megaphone, href: "/community" },
+  { id: "chat", label: "Chat", icon: MessageSquare, href: "/chat" },
   { id: "profile", label: "Profile", icon: User, href: "/profile" },
 ] as const;
 
@@ -26,10 +26,22 @@ export function MobileBottomNav() {
     refetchInterval: 15000,
   });
 
+  // Unread chat messages count
+  const { data: chatConversations } = trpc.chat.listConversations.useQuery(undefined, {
+    enabled: !!session?.user,
+    refetchInterval: 10000,
+  });
+
+  const totalUnreadChats = chatConversations?.conversations?.reduce(
+    (sum, c) => sum + (c.unreadCount || 0),
+    0
+  ) || 0;
+
   // Determine active tab from current pathname
   const getActiveTab = () => {
     if (pathname === "/") return "home";
     if (pathname.startsWith("/directory") || pathname.startsWith("/vendor")) return "search";
+    if (pathname.startsWith("/chat")) return "chat";
     if (pathname.startsWith("/community")) return "community";
     if (pathname.startsWith("/bookings")) return "bookings";
     if (pathname.startsWith("/profile")) return "profile";
@@ -41,6 +53,10 @@ export function MobileBottomNav() {
 
   const handleNavClick = (item: (typeof NAV_ITEMS)[number]) => {
     if ("isSos" in item && item.isSos) {
+      // Haptic feedback for SOS
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate([50, 30, 50]);
+      }
       window.dispatchEvent(new CustomEvent("trigger-sos"));
       return;
     }
@@ -49,7 +65,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 lg:hidden glass-strong border-t border-white/10"
+      className="fixed bottom-0 left-0 right-0 z-50 lg:hidden glass-strong border-t border-white/10 mobile-bottom-nav"
       role="navigation"
       aria-label="Mobile navigation"
     >
@@ -58,6 +74,11 @@ export function MobileBottomNav() {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           const isSos = "isSos" in item && item.isSos;
+
+          // Badge count for chat tab
+          const badgeCount = item.id === "chat" ? totalUnreadChats
+            : item.id === "profile" && unreadData ? unreadData.count
+            : 0;
 
           return (
             <button
@@ -87,10 +108,10 @@ export function MobileBottomNav() {
                         isActive ? "text-brand-primary" : "text-text-muted"
                       )}
                     />
-                    {/* Notification badge on Profile */}
-                    {item.id === "profile" && unreadData && unreadData.count > 0 && (
+                    {/* Badge */}
+                    {badgeCount > 0 && (
                       <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[8px] font-bold text-white">
-                        {unreadData.count > 9 ? "9+" : unreadData.count}
+                        {badgeCount > 9 ? "9+" : badgeCount}
                       </span>
                     )}
                   </div>

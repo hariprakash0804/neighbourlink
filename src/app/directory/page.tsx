@@ -98,6 +98,36 @@ function DirectoryContent() {
   const [sortBy, setSortBy] = useState<"distance" | "rating" | "response">("distance");
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
+  // Save recently viewed category to localStorage for homepage "Recently Viewed"
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = localStorage.getItem("nl_recent_categories");
+      const recent: string[] = stored ? JSON.parse(stored) : [];
+      const updated = [activeCategory, ...recent.filter((c) => c !== activeCategory)].slice(0, 5);
+      localStorage.setItem("nl_recent_categories", JSON.stringify(updated));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [activeCategory]);
+
+  // Helper: Check if vendor is currently open
+  const isOpenNow = (workingHours: Record<string, any> | null): boolean | null => {
+    if (!workingHours || !workingHours.open || !workingHours.close) return null;
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const [openH, openM] = workingHours.open.split(":").map(Number);
+    const [closeH, closeM] = workingHours.close.split(":").map(Number);
+    const openMin = openH * 60 + (openM || 0);
+    const closeMin = closeH * 60 + (closeM || 0);
+    if (closeMin > openMin) {
+      return currentMinutes >= openMin && currentMinutes <= closeMin;
+    } else {
+      // Wraps midnight
+      return currentMinutes >= openMin || currentMinutes <= closeMin;
+    }
+  };
+
   // Favorites
   const toggleFavorite = trpc.favorites.toggle.useMutation();
   const handleToggleFavorite = async (vendorId: string) => {
@@ -413,9 +443,35 @@ function DirectoryContent() {
           )}
         >
           {isLoading ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-12">
-              <LoaderAnimation />
-              <p className="text-sm text-text-muted mt-4">Searching nearby services...</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="clay-card p-5 space-y-3 animate-pulse">
+                  <div className="flex items-start justify-between">
+                    <div className="h-4 w-36 rounded-lg bg-surface-tertiary" />
+                    <div className="h-4 w-16 rounded-full bg-surface-tertiary" />
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="h-3 w-14 rounded bg-surface-tertiary" />
+                    <div className="h-3 w-20 rounded bg-surface-tertiary" />
+                  </div>
+                  <div className="h-3 w-full rounded bg-surface-tertiary" />
+                  <div className="h-3 w-3/4 rounded bg-surface-tertiary" />
+                  <div className="bg-surface-tertiary/50 rounded-xl p-3 space-y-2">
+                    <div className="flex justify-between">
+                      <div className="h-3 w-12 rounded bg-surface-tertiary" />
+                      <div className="h-3 w-16 rounded bg-surface-tertiary" />
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-3 w-10 rounded bg-surface-tertiary" />
+                      <div className="h-3 w-20 rounded bg-surface-tertiary" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <div className="h-8 flex-1 rounded-xl bg-surface-tertiary" />
+                    <div className="h-8 flex-1 rounded-xl bg-surface-tertiary" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="flex-1 flex flex-col items-center justify-center py-12 text-center max-w-sm mx-auto">
@@ -455,7 +511,7 @@ function DirectoryContent() {
                       hidden: { opacity: 0, y: 15 },
                       visible: { opacity: 1, y: 0 },
                     }}
-                    className="clay-card p-5 flex flex-col justify-between h-full group"
+                    className="clay-card card-spotlight p-5 flex flex-col justify-between h-full group"
                   >
                     <div className="space-y-2.5">
                       <div className="flex items-start justify-between gap-2">
@@ -539,7 +595,7 @@ function DirectoryContent() {
                         hidden: { opacity: 0, y: 15 },
                         visible: { opacity: 1, y: 0 },
                       }}
-                      className="clay-card p-5 flex flex-col justify-between h-full group"
+                      className="clay-card card-spotlight p-5 flex flex-col justify-between h-full group"
                     >
                       <div className="space-y-2.5">
                         {/* Header: Business name + verification badge */}
@@ -619,6 +675,23 @@ function DirectoryContent() {
                               </span>
                             </div>
                           )}
+
+                          {/* Open/Closed live indicator */}
+                          {hours && (() => {
+                            const openStatus = isOpenNow(hours);
+                            if (openStatus === null) return null;
+                            return (
+                              <div className="flex justify-between">
+                                <span className="text-text-muted">Status</span>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  openStatus ? "status-open" : "status-closed"
+                                }`}>
+                                  <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1 ${openStatus ? "bg-success animate-pulse" : "bg-danger"}`} />
+                                  {openStatus ? "Open Now" : "Closed"}
+                                </span>
+                              </div>
+                            );
+                          })()}
 
                           {item.responseTimeMin && (
                             <div className="flex justify-between">

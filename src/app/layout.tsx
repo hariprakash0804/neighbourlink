@@ -106,7 +106,27 @@ export default function RootLayout({
             </TRPCProvider>
           </ThemeProvider>
         </AuthProvider>
+
+        {/* Structured Data (JSON-LD) for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "NeighborLink",
+              "url": "https://neighborlink.in",
+              "description": "Hyperlocal directory connecting residents to verified local service vendors and essential emergency services.",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://neighborlink.in/directory?query={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            }),
+          }}
+        />
       </body>
     </html>
   );
 }
+

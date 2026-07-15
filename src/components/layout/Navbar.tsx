@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { EMERGENCY_NUMBERS, APP_NAME } from "@/lib/constants";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { LocationModal } from "@/components/location/LocationModal";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 import { trpc } from "@/lib/trpc";
 
 export function Navbar() {
@@ -45,6 +46,7 @@ export function Navbar() {
     locality: string;
     pincode: string;
   } | null>(null);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const isAuthenticated = status === "authenticated" && session?.user;
 
@@ -90,6 +92,18 @@ export function Navbar() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
+  // Global ⌘K / Ctrl+K keyboard shortcut for Command Palette
+  useEffect(() => {
+    function handleCmdK(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+        event.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    }
+    document.addEventListener("keydown", handleCmdK);
+    return () => document.removeEventListener("keydown", handleCmdK);
+  }, []);
+
 
 
   // Handle search submission
@@ -122,20 +136,36 @@ export function Navbar() {
 
       {/* Emergency Numbers Strip — always visible, never behind auth */}
       <div className="emergency-strip" role="banner" aria-label="Emergency contact numbers">
-        <div className="mx-auto max-w-7xl px-4 py-1.5 flex items-center justify-center gap-6 text-xs font-medium">
-          {EMERGENCY_NUMBERS.map((item) => (
-            <a
-              key={item.number}
-              href={`tel:${item.number}`}
-              className="flex items-center gap-1.5 transition-colors hover:text-danger"
-              style={{ color: item.color }}
-              aria-label={`Call ${item.label} at ${item.number}`}
-            >
-              <Phone className="h-3 w-3" />
-              <span>{item.label}:</span>
-              <span className="font-bold">{item.number}</span>
-            </a>
-          ))}
+        <div className="mx-auto max-w-7xl px-4 py-1.5 overflow-hidden">
+          <div className="flex items-center justify-center gap-6 text-xs font-medium emergency-strip-inner whitespace-nowrap">
+            {EMERGENCY_NUMBERS.map((item) => (
+              <a
+                key={item.number}
+                href={`tel:${item.number}`}
+                className="flex items-center gap-1.5 transition-colors hover:text-danger shrink-0"
+                style={{ color: item.color }}
+                aria-label={`Call ${item.label} at ${item.number}`}
+              >
+                <Phone className="h-3 w-3" />
+                <span>{item.label}:</span>
+                <span className="font-bold">{item.number}</span>
+              </a>
+            ))}
+            {/* Duplicate for seamless marquee on mobile */}
+            {EMERGENCY_NUMBERS.map((item) => (
+              <a
+                key={`dup-${item.number}`}
+                href={`tel:${item.number}`}
+                className="flex items-center gap-1.5 transition-colors hover:text-danger shrink-0 sm:hidden"
+                style={{ color: item.color }}
+                aria-label={`Call ${item.label} at ${item.number}`}
+              >
+                <Phone className="h-3 w-3" />
+                <span>{item.label}:</span>
+                <span className="font-bold">{item.number}</span>
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -223,7 +253,10 @@ export function Navbar() {
                   className="w-full rounded-full py-2.5 pl-10 pr-12 text-sm glass transition-all focus:outline-none focus:ring-2 focus:ring-brand-primary/30 placeholder:text-text-muted"
                   aria-label="Search services and vendors"
                 />
-                <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 rounded-md border border-white/10 bg-surface-tertiary/50 px-1.5 py-0.5 text-[10px] font-mono text-text-muted">
+                <kbd
+                  onClick={() => setIsCommandPaletteOpen(true)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 rounded-md border border-white/10 bg-surface-tertiary/50 px-1.5 py-0.5 text-[10px] font-mono text-text-muted cursor-pointer hover:bg-white/10 transition-colors"
+                >
                   ⌘K
                 </kbd>
               </div>
@@ -588,6 +621,12 @@ export function Navbar() {
         onLocationSet={(loc) => {
           setCurrentLocation({ locality: loc.locality, pincode: loc.pincode });
         }}
+      />
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
       />
     </>
   );

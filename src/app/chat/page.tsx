@@ -13,6 +13,10 @@ import {
   ShieldCheck,
   Building,
   Sparkles,
+  Smile,
+  Check,
+  CheckCheck,
+  Paperclip,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -30,6 +34,7 @@ function ChatContent() {
 
   // Chat text state
   const [typedMessage, setTypedMessage] = useState("");
+  const [showEmoji, setShowEmoji] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Poll conversations every 3s
@@ -79,6 +84,7 @@ function ChatContent() {
 
     const messageText = typedMessage.trim();
     setTypedMessage("");
+    setShowEmoji(false);
 
     try {
       await sendMessageMutation.mutateAsync({
@@ -93,6 +99,17 @@ function ChatContent() {
       setTypedMessage(messageText);
       toast.error(err.message || "Failed to send message.");
     }
+  };
+
+  // Emoji picker data
+  const EMOJI_LIST = [
+    "😊", "👍", "🙏", "❤️", "😂", "🎉", "👋", "✅",
+    "🙂", "😍", "🤔", "💪", "🔥", "⭐", "💯", "🤝",
+    "😄", "🥰", "😎", "🤗", "👏", "✨", "💡", "📞",
+  ];
+
+  const insertEmoji = (emoji: string) => {
+    setTypedMessage((prev) => prev + emoji);
   };
 
   const formatMessageTime = (dateStr: string) => {
@@ -316,11 +333,18 @@ function ChatContent() {
                             <p className="leading-relaxed break-words">{m.content}</p>
                             <span
                               className={cn(
-                                "text-[8px] mt-1 block text-right font-semibold select-none opacity-80",
+                                "text-[8px] mt-1 flex items-center justify-end gap-1 font-semibold select-none opacity-80",
                                 isMe ? "text-white/80" : "text-text-muted"
                               )}
                             >
-                              {formatMessageTime(m.createdAt)}
+                              <span>{formatMessageTime(m.createdAt)}</span>
+                              {isMe && (
+                                m.readAt ? (
+                                  <CheckCheck className="h-3 w-3 text-blue-300" />
+                                ) : (
+                                  <Check className="h-3 w-3" />
+                                )
+                              )}
                             </span>
                           </div>
                         </div>
@@ -328,29 +352,73 @@ function ChatContent() {
                     );
                   })
                 )}
+                {/* Typing indicator */}
+                {sendMessageMutation.isPending && (
+                  <div className="flex justify-start">
+                    <div className="bg-surface-secondary border border-white/5 rounded-2xl rounded-bl-none px-4 py-3">
+                      <div className="typing-dots flex gap-1">
+                        <span /><span /><span />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
               {/* Chat Input form */}
               <form
                 onSubmit={handleSendMessage}
-                className="p-4 border-t border-white/5 bg-surface-tertiary/10 flex gap-2.5 items-center"
+                className="p-4 border-t border-white/5 bg-surface-tertiary/10 relative"
               >
-                <input
-                  type="text"
-                  required
-                  value={typedMessage}
-                  onChange={(e) => setTypedMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 rounded-xl bg-surface-secondary border border-white/10 px-4 py-2.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-brand-primary transition-all"
-                />
-                <button
-                  type="submit"
-                  disabled={!typedMessage.trim() || sendMessageMutation.isPending}
-                  className="rounded-xl bg-gradient-to-r from-brand-primary to-brand-accent p-2.5 text-white hover:brightness-110 disabled:opacity-50 shadow-md transition-all shrink-0"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
+                {/* Emoji Picker Popup */}
+                {showEmoji && (
+                  <div className="absolute bottom-full left-4 right-4 mb-2 glass-strong rounded-2xl border border-white/10 p-3 shadow-elevated max-h-48 overflow-y-auto">
+                    <div className="emoji-grid">
+                      {EMOJI_LIST.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => insertEmoji(emoji)}
+                          className="emoji-btn"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2.5 items-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmoji(!showEmoji)}
+                    className={cn(
+                      "rounded-xl p-2.5 transition-all shrink-0",
+                      showEmoji
+                        ? "bg-brand-primary/10 text-brand-primary"
+                        : "text-text-muted hover:text-text-secondary hover:bg-white/5"
+                    )}
+                    aria-label="Toggle emoji picker"
+                  >
+                    <Smile className="h-4 w-4" />
+                  </button>
+                  <input
+                    type="text"
+                    required
+                    value={typedMessage}
+                    onChange={(e) => setTypedMessage(e.target.value)}
+                    onFocus={() => setShowEmoji(false)}
+                    placeholder="Type a message..."
+                    className="flex-1 rounded-xl bg-surface-secondary border border-white/10 px-4 py-2.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-brand-primary transition-all"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!typedMessage.trim() || sendMessageMutation.isPending}
+                    className="rounded-xl bg-gradient-to-r from-brand-primary to-brand-accent p-2.5 text-white hover:brightness-110 disabled:opacity-50 shadow-md transition-all shrink-0"
+                  >
+                    <Send className="h-4 w-4" />
+                  </button>
+                </div>
               </form>
             </>
           ) : (

@@ -819,6 +819,44 @@ Notification.init(
 User.hasMany(Notification, { foreignKey: "userId", as: "notifications" });
 Notification.belongsTo(User, { foreignKey: "userId", as: "user" });
 
+// ─── Deal / Discount Offer ────────────────────────────────────────────────────
+export class Deal extends Model<InferAttributes<Deal>, InferCreationAttributes<Deal>> {
+  declare id: CreationOptional<string>;
+  declare vendorId: string;
+  declare title: string;
+  declare description: string;
+  declare discountPercent: number;
+  declare validUntil: Date;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare vendor?: Vendor;
+}
+
+Deal.init(
+  {
+    id: { type: DataTypes.STRING(50), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+    vendorId: { type: DataTypes.STRING(50), allowNull: false },
+    title: { type: DataTypes.STRING(255), allowNull: false },
+    description: { type: DataTypes.TEXT, allowNull: false },
+    discountPercent: { type: DataTypes.INTEGER, allowNull: false },
+    validUntil: { type: DataTypes.DATE, allowNull: false },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  {
+    sequelize,
+    modelName: "Deal",
+    tableName: "deals",
+    indexes: [{ fields: ["vendorId"] }, { fields: ["validUntil"] }],
+  }
+);
+
+Vendor.hasMany(Deal, { foreignKey: "vendorId", as: "deals" });
+Deal.belongsTo(Vendor, { foreignKey: "vendorId", as: "vendor" });
+
+
 // ─── Sync helper (dev only) ──────────────────────────────────────────────────
 export async function syncDatabase(force = false) {
   await sequelize.sync({ force, alter: !force });

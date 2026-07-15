@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, useInView } from "framer-motion";
 import {
   MapPin,
@@ -19,10 +19,13 @@ import {
   Heart,
   Clock,
   Sparkles,
+  History,
+  Tag,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ESSENTIAL_CATEGORY_META, VENDOR_CATEGORY_META, APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/lib/trpc";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -41,6 +44,53 @@ const itemVariants = {
   },
 };
 
+/* ═══ Typewriter Hook ═══ */
+const TYPEWRITER_PHRASES = [
+  "Find a plumber nearby…",
+  "Book milk delivery for tomorrow…",
+  "Locate the nearest hospital…",
+  "Hire an electrician today…",
+  "Get your AC serviced…",
+  "Find a maid or cook near you…",
+];
+
+function useTypewriter(phrases: string[], typingSpeed = 60, deletingSpeed = 35, pauseDuration = 2000) {
+  const [currentPhrase, setCurrentPhrase] = useState("");
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const phrase = phrases[phraseIndex];
+
+    const timeout = setTimeout(
+      () => {
+        if (!isDeleting) {
+          setCurrentPhrase(phrase.slice(0, charIndex + 1));
+          setCharIndex((prev) => prev + 1);
+
+          if (charIndex + 1 === phrase.length) {
+            setTimeout(() => setIsDeleting(true), pauseDuration);
+          }
+        } else {
+          setCurrentPhrase(phrase.slice(0, charIndex - 1));
+          setCharIndex((prev) => prev - 1);
+
+          if (charIndex <= 1) {
+            setIsDeleting(false);
+            setPhraseIndex((prev) => (prev + 1) % phrases.length);
+          }
+        }
+      },
+      isDeleting ? deletingSpeed : typingSpeed
+    );
+
+    return () => clearTimeout(timeout);
+  }, [charIndex, isDeleting, phraseIndex, phrases, typingSpeed, deletingSpeed, pauseDuration]);
+
+  return currentPhrase;
+}
+
 /* ═══ Animated Counter Hook ═══ */
 function useCountUp(target: number, duration: number = 2000) {
   const [count, setCount] = useState(0);
@@ -49,13 +99,12 @@ function useCountUp(target: number, duration: number = 2000) {
 
   useEffect(() => {
     if (!isInView) return;
-    let start = 0;
     const startTime = performance.now();
 
     const tick = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // cubic ease-out
+      const eased = 1 - Math.pow(1 - progress, 3);
       setCount(Math.floor(eased * target));
       if (progress < 1) requestAnimationFrame(tick);
     };
@@ -64,6 +113,71 @@ function useCountUp(target: number, duration: number = 2000) {
   }, [isInView, target, duration]);
 
   return { count, ref };
+}
+
+/* ═══ StatCard Component (fixes hooks-in-map violation) ═══ */
+function StatCard({ stat }: { stat: typeof STATS[number] }) {
+  const Icon = stat.icon;
+  const { count, ref } = useCountUp(stat.value);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5 }}
+      className="glass rounded-2xl p-6 text-center hover-glow"
+    >
+      <div
+        className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl"
+        style={{ backgroundColor: `${stat.color}15` }}
+      >
+        <Icon className="h-6 w-6" style={{ color: stat.color }} />
+      </div>
+      <p
+        ref={ref}
+        className="text-2xl font-extrabold stat-counter"
+        style={{ fontFamily: "var(--font-heading)", color: stat.color }}
+      >
+        {count.toLocaleString()}{stat.suffix}
+      </p>
+      <p className="text-xs text-text-muted mt-1 font-medium">{stat.label}</p>
+    </motion.div>
+  );
+}
+
+/* ═══ Hero Particles Component ═══ */
+function HeroParticles() {
+  const particles = useMemo(() => {
+    return Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      size: Math.random() * 4 + 2,
+      left: Math.random() * 100,
+      delay: Math.random() * 15,
+      duration: Math.random() * 10 + 15,
+      color: ['#6366f1', '#8b5cf6', '#a78bfa', '#c084fc', '#e879f9'][Math.floor(Math.random() * 5)],
+    }));
+  }, []);
+
+  return (
+    <div className="hero-particles">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="hero-particle"
+          style={{
+            width: p.size,
+            height: p.size,
+            left: `${p.left}%`,
+            bottom: '-10px',
+            background: p.color,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 /* ═══ Quick Search Chips ═══ */
@@ -116,9 +230,30 @@ const TRENDING = [
   { label: "Maid / Cook", change: "+19%", category: "MAID_COOK" },
 ];
 
+/* ═══ Recently Searched Helper ═══ */
+function getRecentlySearched(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem("nl_recent_categories");
+    return stored ? JSON.parse(stored).slice(0, 3) : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [heroInput, setHeroInput] = useState("");
+  const typedPhrase = useTypewriter(TYPEWRITER_PHRASES);
+  const [recentCategories, setRecentCategories] = useState<string[]>([]);
+
+  // Fetch active deals for homepage carousel
+  const { data: dealsData } = trpc.deals.listActive.useQuery();
+  const activeDeals = dealsData?.deals || [];
+
+  useEffect(() => {
+    setRecentCategories(getRecentlySearched());
+  }, []);
 
   const handleExplore = () => {
     const query = heroInput.trim();
@@ -135,16 +270,29 @@ export default function HomePage() {
     }
   };
 
+  // Get metadata for recently searched categories
+  const recentMeta = useMemo(() => {
+    return recentCategories
+      .map((cat) =>
+        ESSENTIAL_CATEGORY_META.find((c) => c.value === cat) ||
+        VENDOR_CATEGORY_META.find((c) => c.value === cat)
+      )
+      .filter(Boolean) as (typeof ESSENTIAL_CATEGORY_META[number])[];
+  }, [recentCategories]);
+
   return (
     <div className="relative">
       {/* ═══════════════════════════════════════════════════════════════════════
-          HERO SECTION — Aurora gradient mesh background
+          HERO SECTION — Aurora gradient mesh + floating particles
          ═══════════════════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden min-h-[85vh] flex items-center">
         {/* Aurora mesh background */}
         <div className="aurora-mesh absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--app-bg)]" />
         </div>
+
+        {/* Floating particles */}
+        <HeroParticles />
 
         {/* Floating decorative orbs */}
         <motion.div
@@ -199,25 +347,28 @@ export default function HomePage() {
               </span>
             </motion.h1>
 
-            {/* Subtitle */}
-            <motion.p
-              variants={itemVariants}
-              className="mt-6 text-lg text-text-secondary leading-relaxed max-w-2xl"
-            >
-              {APP_DESCRIPTION}
-            </motion.p>
+            {/* Typewriter subtitle */}
+            <motion.div variants={itemVariants} className="mt-6">
+              <p className="text-lg text-text-secondary leading-relaxed max-w-2xl">
+                {APP_DESCRIPTION}
+              </p>
+              <p className="mt-3 text-base font-medium text-text-primary/80">
+                <span className="text-brand-primary">{typedPhrase}</span>
+                <span className="typewriter-cursor" />
+              </p>
+            </motion.div>
 
-            {/* CTA — Location input */}
+            {/* CTA — Location input with glow */}
             <motion.div variants={itemVariants} className="mt-10 flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1 max-w-md">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-primary" />
+              <div className="relative flex-1 max-w-md input-glow rounded-2xl">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-primary z-10" />
                 <input
                   type="text"
                   value={heroInput}
                   onChange={(e) => setHeroInput(e.target.value)}
                   onKeyDown={handleHeroKeyDown}
                   placeholder="Enter your pincode or locality..."
-                  className="w-full rounded-2xl py-4 pl-12 pr-4 text-base glass-strong shadow-elevated focus:outline-none focus:ring-2 focus:ring-brand-primary/40 placeholder:text-text-muted"
+                  className="w-full rounded-2xl py-4 pl-12 pr-4 text-base glass-strong shadow-elevated focus:outline-none focus:ring-2 focus:ring-brand-primary/40 placeholder:text-text-muted relative z-10"
                   aria-label="Enter your pincode or locality to explore"
                 />
               </div>
@@ -243,6 +394,31 @@ export default function HomePage() {
               ))}
             </motion.div>
 
+            {/* Recently Searched */}
+            {recentMeta.length > 0 && (
+              <motion.div variants={itemVariants} className="mt-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <History className="h-3.5 w-3.5 text-text-muted" />
+                  <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Recently Viewed</span>
+                </div>
+                <div className="flex gap-2">
+                  {recentMeta.map((cat) => {
+                    const CatIcon = cat.icon;
+                    return (
+                      <button
+                        key={cat.value}
+                        onClick={() => router.push(`/directory?category=${cat.value}`)}
+                        className="flex items-center gap-2 rounded-xl glass px-3 py-2 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-white/10 transition-all"
+                      >
+                        <CatIcon className="h-3.5 w-3.5" style={{ color: cat.color }} />
+                        <span>{cat.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
             {/* Trust indicators */}
             <motion.div
               variants={itemVariants}
@@ -266,39 +442,13 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          STATS COUNTER SECTION — Animated Counters
+          STATS COUNTER SECTION — Animated Counters (hooks-safe StatCard)
          ═══════════════════════════════════════════════════════════════════════ */}
       <section className="mx-auto max-w-7xl px-4 py-12">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {STATS.map((stat) => {
-            const Icon = stat.icon;
-            const { count, ref } = useCountUp(stat.value);
-            return (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5 }}
-                className="glass rounded-2xl p-6 text-center hover-glow"
-              >
-                <div
-                  className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl"
-                  style={{ backgroundColor: `${stat.color}15` }}
-                >
-                  <Icon className="h-6 w-6" style={{ color: stat.color }} />
-                </div>
-                <p
-                  ref={ref}
-                  className="text-2xl font-extrabold stat-counter"
-                  style={{ fontFamily: "var(--font-heading)", color: stat.color }}
-                >
-                  {count.toLocaleString()}{stat.suffix}
-                </p>
-                <p className="text-xs text-text-muted mt-1 font-medium">{stat.label}</p>
-              </motion.div>
-            );
-          })}
+          {STATS.map((stat) => (
+            <StatCard key={stat.label} stat={stat} />
+          ))}
         </div>
       </section>
 
@@ -334,7 +484,7 @@ export default function HomePage() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => router.push(`/directory?category=${cat.value}`)}
-                  className="clay-card p-5 flex flex-col items-center gap-3 text-center cursor-pointer group"
+                  className="clay-card p-5 flex flex-col items-center gap-3 text-center cursor-pointer group card-spotlight"
                 >
                   <div
                     className="flex h-14 w-14 items-center justify-center rounded-2xl transition-transform group-hover:scale-110"
@@ -391,7 +541,7 @@ export default function HomePage() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => router.push(`/directory?category=${cat.value}`)}
-                  className="clay-card p-4 flex flex-col items-center gap-2.5 text-center cursor-pointer group"
+                  className="clay-card p-4 flex flex-col items-center gap-2.5 text-center cursor-pointer group card-spotlight"
                 >
                   <div
                     className="flex h-12 w-12 items-center justify-center rounded-xl transition-transform group-hover:scale-110"
@@ -452,6 +602,78 @@ export default function HomePage() {
           </div>
         </motion.div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          NEARBY DEALS & OFFERS CAROUSEL
+         ═══════════════════════════════════════════════════════════════════════ */}
+      {activeDeals.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold flex items-center gap-2" style={{ fontFamily: "var(--font-heading)" }}>
+                  <Tag className="h-5 w-5 text-brand-primary" />
+                  Limited-Time Neighborhood Offers
+                </h2>
+                <p className="text-xs text-text-secondary mt-1">Exclusive discounts posted by local vendors near you</p>
+              </div>
+              <button
+                onClick={() => router.push("/deals")}
+                className="flex items-center gap-1 text-xs font-bold text-brand-primary hover:text-brand-accent transition-colors"
+              >
+                <span>View All Offers</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+              {activeDeals.slice(0, 3).map((deal, i) => (
+                <motion.div
+                  key={deal.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  onClick={() => router.push("/deals")}
+                  className="clay-card card-spotlight p-5 flex flex-col justify-between border border-white/5 relative overflow-hidden group cursor-pointer hover:scale-[1.01] transition-all"
+                >
+                  <div>
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-[10px] font-black text-white bg-success px-2 py-0.5 rounded-lg">
+                        {deal.discountPercent}% OFF
+                      </span>
+                      <span className="text-[9px] text-text-muted flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>Active Offer</span>
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-extrabold text-text-primary group-hover:text-brand-primary transition-colors line-clamp-1">
+                      {deal.title}
+                    </h3>
+                    <p className="text-xs text-text-secondary mt-1 line-clamp-2 leading-relaxed">
+                      {deal.description}
+                    </p>
+                  </div>
+                  {deal.vendor && (
+                    <div className="border-t border-white/5 pt-3 mt-4 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-text-primary truncate max-w-[150px]">
+                        {deal.vendor.businessName}
+                      </span>
+                      <span className="text-[9px] text-text-muted font-medium">{deal.vendor.category}</span>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+      )}
+
 
       {/* ═══════════════════════════════════════════════════════════════════════
           HOW IT WORKS — Steps
@@ -614,7 +836,7 @@ export default function HomePage() {
           </motion.div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {TESTIMONIALS.map((t, i) => (
+            {TESTIMONIALS.map((t) => (
               <motion.div
                 key={t.name}
                 variants={itemVariants}

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ESSENTIAL_CATEGORY_META, VENDOR_CATEGORY_META, type CategoryMeta } from "@/lib/constants";
-import { ChevronRight, Building2, Wrench } from "lucide-react";
+import { ChevronRight, Building2, Wrench, History, Sparkles } from "lucide-react";
 
 interface SidebarProps {
   className?: string;
@@ -65,6 +65,27 @@ export function Sidebar({ className }: SidebarProps) {
   const [essentialCollapsed, setEssentialCollapsed] = useState(false);
   const [vendorCollapsed, setVendorCollapsed] = useState(false);
   const [filterText, setFilterText] = useState("");
+  const [recentViewed, setRecentViewed] = useState<string[]>([]);
+
+  // Load recently viewed categories from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("nl_recent_categories");
+      if (stored) setRecentViewed(JSON.parse(stored).slice(0, 3));
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  // Get metadata for recently viewed categories
+  const recentMeta = useMemo(() => {
+    return recentViewed
+      .map((val) =>
+        ESSENTIAL_CATEGORY_META.find((c) => c.value === val) ||
+        VENDOR_CATEGORY_META.find((c) => c.value === val)
+      )
+      .filter(Boolean) as CategoryMeta[];
+  }, [recentViewed]);
 
   const handleCategoryClick = (categoryVal: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -119,6 +140,27 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       </div>
 
+      {/* Recently Viewed */}
+      {recentMeta.length > 0 && !filterText && (
+        <div className="px-4 pt-3 pb-1">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-text-muted">
+            <History className="h-3 w-3" />
+            <span>Recently Viewed</span>
+          </div>
+          <div className="space-y-0.5">
+            {recentMeta.map((cat) => (
+              <CategoryChip
+                key={`recent-${cat.value}`}
+                category={cat}
+                isActive={activeCategory === cat.value}
+                onClick={() => handleCategoryClick(cat.value)}
+              />
+            ))}
+          </div>
+          <div className="mx-3 my-2 border-t border-white/5" />
+        </div>
+      )}
+
       <div className="p-4 space-y-1 flex-1">
         {/* Essential Services Section */}
         {filteredEssential.length > 0 && (
@@ -129,6 +171,9 @@ export function Sidebar({ className }: SidebarProps) {
             >
               <Building2 className="h-3.5 w-3.5" />
               <span>Essential Services</span>
+              <span className="text-[9px] bg-surface-tertiary text-text-muted px-1.5 py-0.5 rounded-full font-bold">
+                {filteredEssential.length}
+              </span>
               <ChevronRight
                 className={cn(
                   "ml-auto h-3.5 w-3.5 transition-transform",
@@ -176,6 +221,9 @@ export function Sidebar({ className }: SidebarProps) {
             >
               <Wrench className="h-3.5 w-3.5" />
               <span>Local Vendors</span>
+              <span className="text-[9px] bg-surface-tertiary text-text-muted px-1.5 py-0.5 rounded-full font-bold">
+                {filteredVendor.length}
+              </span>
               <ChevronRight
                 className={cn(
                   "ml-auto h-3.5 w-3.5 transition-transform",
