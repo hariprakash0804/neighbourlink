@@ -45,6 +45,20 @@ export default function AdminAuditLogsPage() {
     }
   };
 
+  const getActionIcon = (action: string) => {
+    switch (action) {
+      case "BADGE_TIER_PROMOTION":
+        return <Sparkles className="h-3 w-3 mr-1 shrink-0 animate-pulse" />;
+      case "APPROVE_VENDOR":
+      case "REJECT_VENDOR":
+      case "RESOLVE_REPORT":
+      case "DISMISS_REPORT":
+        return <Shield className="h-3 w-3 mr-1 shrink-0" />;
+      default:
+        return null;
+    }
+  };
+
   const formatActionName = (action: string) => {
     return action.replace(/_/g, " ");
   };
@@ -109,6 +123,7 @@ export default function AdminAuditLogsPage() {
                               getActionColor(entry.action)
                             )}
                           >
+                            {getActionIcon(entry.action)}
                             {formatActionName(entry.action)}
                           </span>
 

@@ -30,7 +30,7 @@ interface CommandPaletteProps {
 
 /* ═══ Navigation Items ═══ */
 const NAV_ITEMS = [
-  { label: "Directory", href: "/directory", icon: Search, group: "Navigate" },
+  { label: "Directory", href: "/directory", icon: MapPin, group: "Navigate" },
   { label: "Community Hub", href: "/community", icon: Megaphone, group: "Navigate" },
   { label: "Chat Inbox", href: "/chat", icon: MessageSquare, group: "Navigate" },
   { label: "My Bookings", href: "/bookings", icon: Calendar, group: "Navigate" },
@@ -212,9 +212,35 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                 className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
                 aria-label="Command palette search"
               />
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-white/10 bg-surface-tertiary/50 px-1.5 py-0.5 text-[10px] font-mono text-text-muted">
-                ESC
-              </kbd>
+              <div className="flex items-center gap-1.5">
+                {query ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery("");
+                      inputRef.current?.focus();
+                    }}
+                    className="rounded-md p-1 hover:bg-white/5 text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <>
+                    <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-white/10 bg-surface-tertiary/50 px-1.5 py-0.5 text-[10px] font-mono text-text-muted">
+                      ESC
+                    </kbd>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="inline-flex sm:hidden rounded-md p-1 hover:bg-white/5 text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                      aria-label="Close command palette"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Results */}
@@ -232,10 +258,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                         setQuery(recent);
                         inputRef.current?.focus();
                       }}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs text-text-secondary hover:bg-white/5 transition-colors"
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs text-text-secondary hover:bg-white/5 transition-colors group"
                     >
                       <Search className="h-3.5 w-3.5 text-text-muted" />
                       <span>{recent}</span>
+                      <ArrowRight className="ml-auto h-3 w-3 text-text-muted opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-1 group-hover:translate-x-0" />
                     </button>
                   ))}
                   <div className="border-b border-white/5 mt-2" />
@@ -267,7 +294,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                           onClick={() => handleSelect(item.href, item.label)}
                           data-active={isActive ? "true" : "false"}
                           className={cn(
-                            "command-palette-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                            "command-palette-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors group",
                             isActive
                               ? "text-text-primary"
                               : "text-text-secondary"
@@ -285,11 +312,13 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                             />
                           </div>
                           <span className="font-medium truncate">{item.label}</span>
-                          {isActive && (
+                          {isActive ? (
                             <div className="ml-auto flex items-center gap-1 text-[10px] text-text-muted">
                               <CornerDownLeft className="h-3 w-3" />
                               <span>Enter</span>
                             </div>
+                          ) : (
+                            <ArrowRight className="ml-auto h-3.5 w-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-1 group-hover:translate-x-0" />
                           )}
                         </button>
                       );

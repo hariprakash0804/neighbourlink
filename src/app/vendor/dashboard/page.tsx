@@ -225,21 +225,33 @@ export default function VendorDashboardPage() {
           <div className="flex items-center gap-2 text-xs font-semibold text-brand-primary uppercase tracking-wider">
             <Sparkles className="h-4 w-4" />
             <span>Business Portal</span>
-            {ownProfile?.verificationTier && (
-              <span className="flex items-center gap-1 text-[10px] text-verified-blue font-extrabold uppercase bg-verified-blue/10 px-2 py-0.5 rounded-full border border-verified-blue/20 ml-2">
-                <ShieldCheck className="h-3 w-3" />
-                {ownProfile.verificationTier}
-              </span>
+            {isProfileLoading ? (
+              <span className="inline-block w-20 h-4 rounded animate-pulse bg-white/10 ml-2" />
+            ) : (
+              ownProfile?.verificationTier && (
+                <span className="flex items-center gap-1 text-[10px] text-verified-blue font-extrabold uppercase bg-verified-blue/10 px-2 py-0.5 rounded-full border border-verified-blue/20 ml-2">
+                  <ShieldCheck className="h-3 w-3" />
+                  {ownProfile.verificationTier}
+                </span>
+              )
             )}
           </div>
           <h1
             className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-text-primary via-text-secondary to-text-muted bg-clip-text text-transparent"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            {ownProfile?.businessName || "My Job Board"}
+            {isProfileLoading ? (
+              <span className="inline-block w-48 h-8 rounded animate-pulse bg-white/10" />
+            ) : (
+              ownProfile?.businessName || "My Job Board"
+            )}
           </h1>
           <p className="text-sm text-text-secondary max-w-xl">
-            {ownProfile?.description || "Manage incoming neighborhood service bookings, view customer details, and update job status."}
+            {isProfileLoading ? (
+              <span className="inline-block w-96 h-4 rounded animate-pulse bg-white/10" />
+            ) : (
+              ownProfile?.description || "Manage incoming neighborhood service bookings, view customer details, and update job status."
+            )}
           </p>
         </div>
       </div>
@@ -283,7 +295,13 @@ export default function VendorDashboardPage() {
           <div>
             <span className="text-[10px] text-text-muted block font-semibold uppercase">Average Rating</span>
             <span className="text-lg font-black">
-              {ownProfile?.ratingCount ? `${ownProfile.ratingAvg}★ (${ownProfile.ratingCount})` : "No Ratings"}
+              {isProfileLoading ? (
+                <span className="inline-block w-16 h-5 rounded animate-pulse bg-white/10" />
+              ) : ownProfile?.ratingCount ? (
+                `${ownProfile.ratingAvg}★ (${ownProfile.ratingCount})`
+              ) : (
+                "No Ratings"
+              )}
             </span>
           </div>
         </div>
@@ -405,8 +423,9 @@ export default function VendorDashboardPage() {
                 <div key={deal.id} className="clay-card p-5 flex flex-col justify-between border border-white/5 relative overflow-hidden group">
                   <div className="space-y-3">
                     <div className="flex justify-between items-start">
-                      <span className="text-[10px] font-black text-white bg-success px-2 py-0.5 rounded-lg">
-                        {deal.discountPercent}% OFF
+                      <span className="text-[10px] font-black text-white bg-success px-2 py-0.5 rounded-lg flex items-center gap-1">
+                        <Zap className="h-3 w-3 fill-current text-white" />
+                        <span>{deal.discountPercent}% OFF</span>
                       </span>
                       <span className="text-[9px] text-text-muted flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -679,7 +698,7 @@ export default function VendorDashboardPage() {
                     <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
                   ) : (
                     <>
-                      <Tag className="h-4 w-4" />
+                      <Zap className="h-4 w-4 fill-current text-white" />
                       <span>Publish Offer</span>
                     </>
                   )}

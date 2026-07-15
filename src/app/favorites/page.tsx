@@ -35,11 +35,19 @@ export default function FavoritesPage() {
   const { data: session, status } = useSession();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
   const { data, isLoading, refetch } = trpc.favorites.list.useQuery(undefined, {
     enabled: status === "authenticated",
   });
 
   const toggleFavorite = trpc.favorites.toggle.useMutation({
+    onMutate: (variables) => {
+      setRemovingId(variables.vendorId);
+    },
+    onSettled: () => {
+      setRemovingId(null);
+    },
     onSuccess: () => refetch(),
   });
 
@@ -145,81 +153,104 @@ export default function FavoritesPage() {
             animate="visible"
             className="space-y-3"
           >
-            {favorites.map((fav) => {
-              const catMeta = VENDOR_CATEGORY_META.find((c) => c.value === fav.vendor.category);
-              const CatIcon = catMeta?.icon;
+            <AnimatePresence mode="popLayout">
+              {favorites.map((fav) => {
+                const catMeta = VENDOR_CATEGORY_META.find((c) => c.value === fav.vendor.category);
+                const CatIcon = catMeta?.icon;
 
-              return (
-                <motion.div
-                  key={fav.id}
-                  variants={itemVariants}
-                  className="glass rounded-2xl p-5 flex items-start gap-4 group hover:shadow-elevated transition-all hover-glow cursor-pointer"
-                  onClick={() => router.push(`/vendor/${fav.vendor.id}`)}
-                >
-                  {/* Category icon */}
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-xl shrink-0 transition-transform group-hover:scale-110"
-                    style={{ background: `${catMeta?.color || "#6366f1"}15` }}
+                return (
+                  <motion.div
+                    key={fav.id}
+                    variants={itemVariants}
+                    exit={{ opacity: 0, scale: 0.9, y: -16, transition: { duration: 0.2 } }}
+                    layout
+                    className="glass rounded-2xl p-5 flex items-start gap-4 group hover:shadow-elevated transition-all hover-glow cursor-pointer"
+                    onClick={() => router.push(`/vendor/${fav.vendor.id}`)}
                   >
-                    {CatIcon && (
-                      <CatIcon
-                        className="h-6 w-6"
-                        style={{ color: catMeta?.color || "#6366f1" }}
-                      />
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-bold truncate">
-                        {fav.vendor.businessName}
-                      </h3>
-                      {fav.vendor.verificationTier === "TOP_RATED" && (
-                        <Award className="h-4 w-4 text-amber-400 shrink-0" />
-                      )}
-                      {fav.vendor.verificationTier === "ID_VERIFIED" && (
-                        <ShieldCheck className="h-4 w-4 text-blue-400 shrink-0" />
+                    {/* Category icon */}
+                    <div
+                      className="flex h-12 w-12 items-center justify-center rounded-xl shrink-0 transition-transform group-hover:scale-110"
+                      style={{ background: `${catMeta?.color || "#6366f1"}15` }}
+                    >
+                      {CatIcon && (
+                        <CatIcon
+                          className="h-6 w-6"
+                          style={{ color: catMeta?.color || "#6366f1" }}
+                        />
                       )}
                     </div>
-                    <p className="text-xs text-text-muted mb-2">
-                      {catMeta?.label || fav.vendor.category}
-                    </p>
-                    <div className="flex items-center gap-3">
-                      {fav.vendor.ratingCount > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-text-secondary">
-                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                          <span className="font-semibold">{fav.vendor.ratingAvg.toFixed(1)}</span>
-                          <span className="text-text-muted">({fav.vendor.ratingCount})</span>
-                        </div>
-                      )}
-                      {fav.vendor.phone && (
-                        <a
-                          href={telLink(fav.vendor.phone)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex items-center gap-1 text-xs text-success hover:underline"
-                        >
-                          <Phone className="h-3 w-3" />
-                          {formatPhone(fav.vendor.phone)}
-                        </a>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Remove button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite.mutate({ vendorId: fav.vendor.id });
-                    }}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-danger/10 transition-colors shrink-0"
-                    aria-label="Remove from favorites"
-                  >
-                    <Heart className="h-4.5 w-4.5 text-danger fill-danger" />
-                  </button>
-                </motion.div>
-              );
-            })}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-bold truncate">
+                          {fav.vendor.businessName}
+                        </h3>
+                        {fav.vendor.verificationTier === "TOP_RATED" && (
+                          <Award className="h-4 w-4 text-amber-400 shrink-0" />
+                        )}
+                        {fav.vendor.verificationTier === "ID_VERIFIED" && (
+                          <ShieldCheck className="h-4 w-4 text-blue-400 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-text-muted mb-2">
+                        {catMeta?.label || fav.vendor.category}
+                      </p>
+                      <div className="flex items-center gap-3">
+                        {fav.vendor.ratingCount > 0 && (
+                          <div className="flex items-center gap-1 text-xs text-text-secondary">
+                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                            <span className="font-semibold">{fav.vendor.ratingAvg.toFixed(1)}</span>
+                            <span className="text-text-muted">({fav.vendor.ratingCount})</span>
+                          </div>
+                        )}
+                        {fav.vendor.phone && (
+                          <a
+                            href={telLink(fav.vendor.phone)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1 text-xs text-success hover:underline"
+                          >
+                            <Phone className="h-3.5 w-3.5" />
+                            {formatPhone(fav.vendor.phone)}
+                          </a>
+                        )}
+                        {fav.vendor.userId && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/chat?recipientId=${fav.vendor.userId}`);
+                            }}
+                            className="flex items-center gap-1 text-xs text-brand-primary hover:underline bg-transparent border-0 cursor-pointer p-0"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            Chat
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Remove button */}
+                    <button
+                      disabled={toggleFavorite.isPending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite.mutate({ vendorId: fav.vendor.id });
+                      }}
+                      className={cn(
+                        "flex h-9 w-9 items-center justify-center rounded-xl transition-colors shrink-0 relative group/btn",
+                        toggleFavorite.isPending && removingId === fav.vendor.id
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-danger/10"
+                      )}
+                      aria-label="Remove from favorites"
+                    >
+                      <Heart className="h-4.5 w-4.5 text-danger fill-danger group-hover/btn:scale-0 transition-transform duration-200" />
+                      <Trash2 className="h-4.5 w-4.5 text-danger absolute scale-0 group-hover/btn:scale-100 transition-transform duration-200" />
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </motion.div>
         )}
       </div>

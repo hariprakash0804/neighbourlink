@@ -338,9 +338,15 @@ export default function CommunityHubPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-brand-primary/5 via-transparent to-transparent pointer-events-none" />
         <div className="max-w-4xl mx-auto px-4 py-8 relative flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-black tracking-tight leading-tight flex items-center gap-2">
+            <h1 className="text-xl font-black tracking-tight leading-tight flex flex-wrap items-center gap-2">
               <Megaphone className="h-6 w-6 text-brand-primary" />
-              Community Hub
+              <span>Community Hub</span>
+              {userLocation.locality && (
+                <span className="text-[10px] uppercase font-black tracking-wider text-brand-primary/80 bg-brand-primary/10 border border-brand-primary/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {userLocation.locality}
+                </span>
+              )}
             </h1>
             <p className="text-xs text-text-secondary mt-1">
               Join neighbor bulletin boards, report local civic issues, share rides, find local jobs, or coordinate upcoming community events.
@@ -443,7 +449,8 @@ export default function CommunityHubPage() {
               <div key={post.id} className="clay-card p-4 border border-white/5 flex flex-col justify-between">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-black tracking-wider text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded border border-brand-primary/20">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded border border-brand-primary/20 flex items-center gap-1">
+                      <Tag className="h-3 w-3" />
                       {post.category}
                     </span>
                     {session?.user && post.userId === session.user.id && (
@@ -618,7 +625,7 @@ export default function CommunityHubPage() {
                   
                   <div className="bg-white/5 p-2 rounded-lg space-y-1 text-[11px] border border-white/5">
                     <p className="text-text-secondary flex items-center gap-1">
-                      <MapPin className="h-3 w-3 text-brand-primary" />
+                      <Building className="h-3 w-3 text-cyan-400" />
                       Venue: <span className="text-text-primary font-semibold">{event.venue}</span>
                     </p>
                     <p className="text-text-secondary flex items-center gap-1">
@@ -964,7 +971,10 @@ export default function CommunityHubPage() {
 
                     <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1 col-span-3 sm:col-span-1">
-                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Category</label>
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black flex items-center gap-1">
+                          <Tag className="h-3 w-3 text-text-secondary" />
+                          Category
+                        </label>
                         <select
                           value={category}
                           required
@@ -1039,7 +1049,10 @@ export default function CommunityHubPage() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1 col-span-2 sm:col-span-1">
-                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Category</label>
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black flex items-center gap-1">
+                          <Tag className="h-3 w-3 text-text-secondary" />
+                          Category
+                        </label>
                         <select
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
@@ -1077,7 +1090,10 @@ export default function CommunityHubPage() {
 
                       {activeTab === "events" && (
                         <div className="space-y-1 col-span-2 sm:col-span-1">
-                          <label className="text-[10px] text-text-secondary/60 uppercase font-black">Venue</label>
+                          <label className="text-[10px] text-text-secondary/60 uppercase font-black flex items-center gap-1">
+                            <Building className="h-3 w-3 text-text-secondary" />
+                            Venue
+                          </label>
                           <input
                             type="text"
                             required
@@ -1130,7 +1146,10 @@ export default function CommunityHubPage() {
 
                     {/* Photo Upload block */}
                     <div className="space-y-2">
-                      <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Attachment Image</label>
+                      <label className="text-[10px] text-text-secondary/60 uppercase font-black flex items-center gap-1">
+                        <ImageIcon className="h-3.5 w-3.5 text-text-secondary" />
+                        Attachment Image
+                      </label>
                       <div className="flex items-center gap-3">
                         <label className="flex items-center justify-center gap-1.5 px-4 py-2 border border-dashed border-white/20 rounded-xl cursor-pointer hover:bg-white/5 transition-all text-xs font-semibold text-text-secondary">
                           <UploadCloud className="h-4 w-4" />

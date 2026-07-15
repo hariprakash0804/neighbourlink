@@ -86,15 +86,37 @@ export default function AdminModerationPage() {
       <div className="relative overflow-hidden border-b border-white/5 bg-surface-secondary/20">
         <div className="absolute inset-0 bg-gradient-to-b from-destructive/5 via-transparent to-transparent pointer-events-none" />
         <div className="max-w-5xl mx-auto px-4 py-8 relative">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-destructive/10 p-3 border border-destructive/20 text-destructive">
-              <ShieldAlert className="h-6 w-6" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-destructive/10 p-3 border border-destructive/20 text-destructive">
+                <ShieldAlert className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-black tracking-tight leading-tight">Moderation Queue</h1>
+                <p className="text-xs text-text-secondary mt-1">
+                  Review and resolve user-flagged profiles, reviews, and activities
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tight leading-tight">Moderation Queue</h1>
-              <p className="text-xs text-text-secondary mt-1">
-                Review and resolve user-flagged profiles, reviews, and activities
-              </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => router.push("/admin/vendors")}
+                className="px-3 py-1.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all"
+              >
+                Vendor Verification
+              </button>
+              <button
+                onClick={() => router.push("/admin/audit-logs")}
+                className="px-3 py-1.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all"
+              >
+                Audit Logs
+              </button>
+              <button
+                onClick={() => router.push("/")}
+                className="px-3 py-1.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all"
+              >
+                Home Feed
+              </button>
             </div>
           </div>
         </div>
@@ -122,6 +144,12 @@ export default function AdminModerationPage() {
           <div className="grid gap-4 md:grid-cols-3 items-start">
             {/* Reports List */}
             <div className="md:col-span-2 space-y-3">
+              <div className="flex items-center gap-2 px-1 pb-1">
+                <Layers className="h-4 w-4 text-brand-primary" />
+                <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                  Active Reports ({reports.length})
+                </h2>
+              </div>
               {reports.map((report) => (
                 <motion.div
                   key={report.id}
@@ -142,8 +170,9 @@ export default function AdminModerationPage() {
                           ID: {report.targetId.slice(0, 8)}...
                         </span>
                       </div>
-                      <h3 className="text-sm font-bold text-text-primary">
-                        Reported Reason:
+                      <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5">
+                        <Flag className="h-3.5 w-3.5 text-destructive" />
+                        <span>Reported Reason:</span>
                       </h3>
                       <p className="text-xs text-text-secondary line-clamp-2">
                         "{report.reason}"
@@ -184,8 +213,9 @@ export default function AdminModerationPage() {
                       >
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <h2 className="text-sm font-black uppercase tracking-wider text-text-secondary">
-                              Report Detail
+                            <h2 className="text-sm font-black uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
+                              <Eye className="h-4 w-4 text-brand-primary" />
+                              <span>Report Detail</span>
                             </h2>
                             <button
                               onClick={() => setSelectedReportId(null)}
@@ -235,8 +265,9 @@ export default function AdminModerationPage() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <span className="text-[10px] text-text-secondary/60 uppercase font-black block">
-                            Incident Reason
+                          <span className="text-[10px] text-text-secondary/60 uppercase font-black flex items-center gap-1">
+                            <Flag className="h-3 w-3 text-destructive" />
+                            <span>Incident Reason</span>
                           </span>
                           <div className="text-xs text-text-primary border border-destructive/20 bg-destructive/5 p-3.5 rounded-xl leading-relaxed italic">
                             "{report.reason}"

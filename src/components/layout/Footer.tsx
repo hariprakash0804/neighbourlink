@@ -228,7 +228,12 @@ export function Footer() {
                 Platform
               </h4>
               <ul className="space-y-2.5 text-sm text-text-secondary">
-                <li><Link href="/vendor/register" className="hover:text-brand-primary transition-colors">Register as Vendor</Link></li>
+                <li>
+                  <Link href="/vendor/register" className="group flex items-center gap-1 hover:text-brand-primary transition-colors">
+                    <span>Register as Vendor</span>
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-brand-primary" />
+                  </Link>
+                </li>
                 <li><Link href="/compare" className="hover:text-brand-primary transition-colors">Compare Vendors</Link></li>
                 <li><Link href="/about" className="hover:text-brand-primary transition-colors">About Us</Link></li>
                 <li><Link href="/community" className="hover:text-brand-primary transition-colors">Community Hub</Link></li>

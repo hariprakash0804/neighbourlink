@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { getFileUrl } from "@/lib/storage-client";
-import { cn, formatDistance, formatPhone, telLink } from "@/lib/utils";
+import { cn, formatDistance, formatPhone, telLink, timeAgo } from "@/lib/utils";
 import { Map } from "@/components/map/Map";
 
 export default function AdminVendorsPage() {
@@ -81,7 +81,7 @@ export default function AdminVendorsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border-b border-white/10 pb-6">
+      <div className="mb-8 flex flex-col lg:flex-row lg:items-end justify-between border-b border-white/10 pb-6 gap-6">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary mb-3">
             <Shield className="h-3.5 w-3.5" /> ADMIN SECURITY PORTAL
@@ -94,9 +94,29 @@ export default function AdminVendorsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary glass rounded-full px-4 py-2 border border-white/5">
-          <ClipboardList className="h-4 w-4 text-brand-primary" />
-          <span>Pending Applications: {pendingList.length}</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary glass rounded-xl px-4 py-2 border border-white/5 h-9">
+            <ClipboardList className="h-4 w-4 text-brand-primary" />
+            <span>Pending Applications: {pendingList.length}</span>
+          </div>
+          <button
+            onClick={() => router.push("/admin/moderation")}
+            className="px-4 py-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all h-9 select-none"
+          >
+            Moderation Queue
+          </button>
+          <button
+            onClick={() => router.push("/admin/audit-logs")}
+            className="px-4 py-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all h-9 select-none"
+          >
+            Audit Logs
+          </button>
+          <button
+            onClick={() => router.push("/")}
+            className="px-4 py-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all h-9 select-none"
+          >
+            Home Feed
+          </button>
         </div>
       </div>
 
@@ -151,8 +171,14 @@ export default function AdminVendorsPage() {
                     Owner: {vendor.user?.name || "Unspecified"}
                   </p>
                   <div className="flex justify-between items-center mt-3 text-[10px] text-text-muted">
-                    <span>Radius: {formatDistance(vendor.serviceRadiusM)}</span>
-                    <span>{new Date(vendor.createdAt).toLocaleDateString()}</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-brand-primary/70" />
+                      Radius: {formatDistance(vendor.serviceRadiusM)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-text-muted/70" />
+                      {timeAgo(vendor.createdAt)}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -221,8 +247,9 @@ export default function AdminVendorsPage() {
                             {selectedVendor.user?.phone ? (
                               <a
                                 href={telLink(selectedVendor.user.phone)}
-                                className="font-semibold text-brand-primary hover:underline"
+                                className="inline-flex items-center gap-1 font-semibold text-brand-primary hover:underline"
                               >
+                                <Phone className="h-3 w-3" />
                                 {formatPhone(selectedVendor.user.phone)}
                               </a>
                             ) : (
@@ -234,6 +261,10 @@ export default function AdminVendorsPage() {
                             <span className="font-semibold text-text-primary">
                               {selectedVendor.user?.email || "None"}
                             </span>
+                          </p>
+                          <p className="flex items-center gap-1.5 text-text-muted text-[11px] mt-2 pt-2 border-t border-white/5">
+                            <Clock className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                            <span>Submitted {timeAgo(selectedVendor.createdAt)}</span>
                           </p>
                         </div>
                       </div>
@@ -272,7 +303,8 @@ export default function AdminVendorsPage() {
 
                     {/* Service range map */}
                     <div className="space-y-2">
-                      <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">
+                      <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-brand-primary" />
                         Service Range
                       </h3>
                       <div className="h-44 relative rounded-2xl overflow-hidden border border-white/5">
@@ -281,7 +313,8 @@ export default function AdminVendorsPage() {
                           radiusMeters={selectedVendor.serviceRadiusM}
                         />
                       </div>
-                      <p className="text-[10px] text-text-muted text-right">
+                      <p className="text-[10px] text-text-muted text-right flex items-center justify-end gap-1">
+                        <MapPin className="h-3 w-3 text-text-muted" />
                         Coverage Radius: {formatDistance(selectedVendor.serviceRadiusM)}
                       </p>
                     </div>

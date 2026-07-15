@@ -342,8 +342,9 @@ export default function HomePage() {
               style={{ fontFamily: "var(--font-heading)" }}
             >
               Your Neighborhood,{" "}
-              <span className="bg-gradient-to-r from-brand-primary via-brand-accent to-aurora-5 bg-clip-text text-transparent">
+              <span className="relative inline-flex items-center bg-gradient-to-r from-brand-primary via-brand-accent to-aurora-5 bg-clip-text text-transparent">
                 Connected
+                <Sparkles className="h-6 w-6 ml-2 text-brand-accent animate-pulse shrink-0" style={{ strokeWidth: 2.5 }} />
               </span>
             </motion.h1>
 
@@ -594,8 +595,9 @@ export default function HomePage() {
                   <p className="text-sm font-bold text-text-primary">{item.label}</p>
                   <p className="text-[10px] text-text-muted mt-0.5">Searches this week</p>
                 </div>
-                <span className="text-xs font-extrabold text-success bg-success/10 px-2 py-1 rounded-lg">
-                  {item.change}
+                <span className="text-xs font-extrabold text-success bg-success/10 px-2 py-1 rounded-lg flex items-center gap-0.5">
+                  <Zap className="h-3 w-3 fill-success" />
+                  <span>{item.change}</span>
                 </span>
               </motion.button>
             ))}
@@ -644,8 +646,9 @@ export default function HomePage() {
                 >
                   <div>
                     <div className="flex justify-between items-start mb-3">
-                      <span className="text-[10px] font-black text-white bg-success px-2 py-0.5 rounded-lg">
-                        {deal.discountPercent}% OFF
+                      <span className="text-[10px] font-black text-white bg-success px-2 py-0.5 rounded-lg flex items-center gap-1">
+                        <Zap className="h-3 w-3 fill-white" />
+                        <span>{deal.discountPercent}% OFF</span>
                       </span>
                       <span className="text-[9px] text-text-muted flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -895,7 +898,7 @@ export default function HomePage() {
               Are You a Local Vendor?
             </h2>
             <p className="mt-4 text-lg text-white/80 leading-relaxed">
-              Join NeighborLink to reach thousands of residents in your area. Get verified, build trust,
+              Join {APP_NAME} to reach thousands of residents in your area. Get verified, build trust,
               and grow your business with our booking and review system.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">

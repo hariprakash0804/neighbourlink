@@ -346,7 +346,10 @@ export default function ResidentBookingsPage() {
                             maxLength={2000}
                           />
                           {submitReview.error && (
-                            <p className="text-xs text-red-400">{submitReview.error.message}</p>
+                            <p className="text-xs text-red-400 flex items-center gap-1.5">
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              <span>{submitReview.error.message}</span>
+                            </p>
                           )}
                           <div className="flex gap-2">
                             <button

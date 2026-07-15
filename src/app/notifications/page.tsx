@@ -132,9 +132,10 @@ export default function NotificationsPage() {
                 Notifications
               </h1>
               <p className="text-xs text-text-secondary">
+                {session?.user?.name ? `Hey ${session.user.name.split(" ")[0]}, ` : ""}
                 {unreadCount > 0
-                  ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
-                  : "All caught up!"}
+                  ? `you have ${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
+                  : "you're all caught up!"}
               </p>
             </div>
           </div>
@@ -152,89 +153,105 @@ export default function NotificationsPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 mt-4">
-        {notifications.length === 0 ? (
-          /* Empty state */
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="clay-card p-12 text-center mt-8"
-          >
-            <Inbox className="h-16 w-16 text-text-muted mx-auto mb-4" />
-            <h3
-              className="text-lg font-bold mb-2"
-              style={{ fontFamily: "var(--font-heading)" }}
+        <AnimatePresence mode="wait">
+          {notifications.length === 0 ? (
+            /* Empty state */
+            <motion.div
+              key="empty-state"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="clay-card p-12 text-center mt-8"
             >
-              No Notifications Yet
-            </h3>
-            <p className="text-sm text-text-secondary max-w-sm mx-auto">
-              When you receive booking updates, reviews, or messages, they&apos;ll appear here.
-            </p>
-          </motion.div>
-        ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-2"
-          >
-            {notifications.map((notif) => {
-              const config = TYPE_CONFIG[notif.type] || TYPE_CONFIG.SYSTEM;
-              const Icon = config.icon;
+              <Inbox className="h-16 w-16 text-text-muted mx-auto mb-4" />
+              <h3
+                className="text-lg font-bold mb-2"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                No Notifications Yet
+              </h3>
+              <p className="text-sm text-text-secondary max-w-sm mx-auto">
+                When you receive booking updates, reviews, or messages, they&apos;ll appear here.
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="notifications-list"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="space-y-2"
+            >
+              {notifications.map((notif) => {
+                const config = TYPE_CONFIG[notif.type] || TYPE_CONFIG.SYSTEM;
+                const Icon = config.icon;
 
-              return (
-                <motion.div
-                  key={notif.id}
-                  variants={itemVariants}
-                  onClick={() => {
-                    if (!notif.read) {
-                      markRead.mutate({ notificationId: notif.id });
-                    }
-                  }}
-                  className={cn(
-                    "glass rounded-2xl p-4 flex items-start gap-3.5 cursor-pointer transition-all hover:shadow-elevated",
-                    !notif.read && "border-l-4",
-                    !notif.read && "border-brand-primary/50"
-                  )}
-                >
-                  {/* Icon */}
-                  <div
-                    className="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
-                    style={{ background: config.bgColor }}
+                return (
+                  <motion.div
+                    key={notif.id}
+                    variants={itemVariants}
+                    onClick={() => {
+                      if (!notif.read) {
+                        markRead.mutate({ notificationId: notif.id });
+                      }
+                    }}
+                    className={cn(
+                      "glass rounded-2xl p-4 flex items-start gap-3.5 cursor-pointer transition-all hover:shadow-elevated",
+                      !notif.read && "border-l-4",
+                      !notif.read && "border-brand-primary/50"
+                    )}
                   >
-                    <Icon className="h-5 w-5" style={{ color: config.color }} />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4
-                        className={cn(
-                          "text-sm truncate",
-                          !notif.read ? "font-bold text-text-primary" : "font-medium text-text-secondary"
-                        )}
-                      >
-                        {notif.title}
-                      </h4>
-                      <span className="text-[10px] text-text-muted whitespace-nowrap shrink-0">
-                        {timeAgo(notif.createdAt)}
-                      </span>
+                    {/* Icon */}
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
+                      style={{ background: config.bgColor }}
+                    >
+                      <Icon className="h-5 w-5" style={{ color: config.color }} />
                     </div>
-                    <p className="text-xs text-text-secondary mt-0.5 line-clamp-2 leading-relaxed">
-                      {notif.body}
-                    </p>
-                  </div>
 
-                  {/* Unread dot */}
-                  {!notif.read && (
-                    <div className="flex items-center justify-center shrink-0 mt-2">
-                      <div className="h-2.5 w-2.5 rounded-full bg-brand-primary" />
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4
+                          className={cn(
+                            "text-sm truncate",
+                            !notif.read ? "font-bold text-text-primary" : "font-medium text-text-secondary"
+                          )}
+                        >
+                          {notif.title}
+                        </h4>
+                        <span className="text-[10px] text-text-muted whitespace-nowrap shrink-0">
+                          {timeAgo(notif.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-secondary mt-0.5 line-clamp-2 leading-relaxed">
+                        {notif.body}
+                      </p>
                     </div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        )}
+
+                    {/* Unread dot */}
+                    <AnimatePresence>
+                      {!notif.read && (
+                        <motion.div
+                          key="unread-dot"
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center justify-center shrink-0 mt-2"
+                        >
+                          <div className="h-2.5 w-2.5 rounded-full bg-brand-primary" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

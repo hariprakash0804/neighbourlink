@@ -26,6 +26,10 @@ import { useSession } from "next-auth/react";
 export default function VendorRegisterPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const businessInputRef = useRef<HTMLInputElement>(null);
+
+  // Steps: 1: Profile, 2: Location, 3: Documents, 4: Pricing/Hours
+  const [step, setStep] = useState(1);
 
   // Redirect to sign in if not authenticated
   useEffect(() => {
@@ -34,8 +38,13 @@ export default function VendorRegisterPage() {
     }
   }, [status, router]);
 
-  // Steps: 1: Profile, 2: Location, 3: Documents, 4: Pricing/Hours
-  const [step, setStep] = useState(1);
+  // Focus business name input when returning to step 1
+  useEffect(() => {
+    if (step === 1 && businessInputRef.current) {
+      businessInputRef.current.focus();
+    }
+  }, [step]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -254,12 +263,21 @@ export default function VendorRegisterPage() {
                 <p className="text-xs text-text-muted mt-1">
                   Tell your neighbors who you are and what services you provide.
                 </p>
+                {session?.user?.phone && (
+                  <div className="flex items-center gap-2 text-xs text-text-muted mt-3 bg-white/5 border border-white/5 rounded-xl px-3.5 py-2.5 max-w-fit">
+                    <Phone className="h-4 w-4 text-brand-primary" />
+                    <span>
+                      Registering with phone: <span className="font-semibold text-text-primary">{session.user.phone}</span>
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-text-secondary">Business/Shop Name</label>
                   <input
+                    ref={businessInputRef}
                     type="text"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
@@ -508,6 +526,17 @@ export default function VendorRegisterPage() {
                       className="w-full rounded-xl py-3 px-4 text-sm glass focus:outline-none focus:ring-2 focus:ring-brand-primary/40 text-text-primary"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-text-secondary">Pricing Details & Inclusions</label>
+                  <input
+                    type="text"
+                    value={priceDetails}
+                    onChange={(e) => setPriceDetails(e.target.value)}
+                    placeholder="e.g. Visiting charges of ₹150 apply, parts charged extra"
+                    className="w-full rounded-xl py-3 px-4 text-sm glass focus:outline-none focus:ring-2 focus:ring-brand-primary/40 placeholder:text-text-muted"
+                  />
                 </div>
 
                 <div className="space-y-1.5">

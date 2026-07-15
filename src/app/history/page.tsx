@@ -169,16 +169,24 @@ function HistoryContent() {
                         <div className="clay-card p-4 space-y-2.5">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5">
-                                <Building2 className="h-3.5 w-3.5 text-brand-accent" />
-                                {booking.vendor?.businessName || "Service Booking"}
-                              </h3>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5">
+                                  <Building2 className="h-3.5 w-3.5 text-brand-accent" />
+                                  {booking.vendor?.businessName || "Service Booking"}
+                                </h3>
+                                {booking.vendor?.verificationTier === "TOP_RATED" && (
+                                  <span className="flex items-center gap-0.5 rounded-full bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-extrabold text-amber-400 border border-amber-400/20 select-none shrink-0">
+                                    <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                                    <span>TOP RATED</span>
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-[10px] text-text-muted mt-0.5">
                                 {timeAgo(booking.createdAt as unknown as string)}
                               </p>
                             </div>
                             <span className={cn(
-                              "text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1",
+                              "text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0",
                               statusMeta.bg,
                               statusMeta.text,
                             )}>
@@ -187,23 +195,50 @@ function HistoryContent() {
                             </span>
                           </div>
 
-                          {/* Slot time */}
-                          <div className="flex items-center gap-2 text-xs text-text-secondary">
-                            <Calendar className="h-3 w-3 text-text-muted" />
-                            <span>
-                              {new Date(booking.slotStart).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                              {" at "}
-                              {new Date(booking.slotStart).toLocaleTimeString("en-IN", {
-                                hour: "numeric",
-                                minute: "2-digit",
-                                hour12: true,
-                              })}
-                            </span>
+                          {/* Booking Details */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs text-text-secondary bg-surface-tertiary/20 p-2.5 rounded-xl border border-white/5">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                              <span>
+                                {new Date(booking.slotStart).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                              <span>
+                                {new Date(booking.slotStart).toLocaleTimeString("en-IN", {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 sm:col-span-2">
+                              <MapPin className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                              <span>In-Home Service (At Resident Address)</span>
+                            </div>
                           </div>
+
+                          {/* Alert / Details if declined/cancelled */}
+                          {(booking.status === "DECLINED" || booking.status === "CANCELLED") && (
+                            <div className={cn(
+                              "flex items-start gap-1.5 text-[11px] rounded-lg px-2.5 py-1.5 border leading-relaxed",
+                              booking.status === "DECLINED"
+                                ? "text-danger/90 bg-danger/5 border-danger/10"
+                                : "text-text-muted bg-surface-tertiary/50 border-white/5"
+                            )}>
+                              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                              <span>
+                                {booking.status === "DECLINED"
+                                  ? "This booking request was declined by the vendor."
+                                  : "This booking request was cancelled."}
+                              </span>
+                            </div>
+                          )}
 
                           {/* Notes */}
                           {booking.notes && (

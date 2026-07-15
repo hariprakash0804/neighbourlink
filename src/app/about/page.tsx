@@ -236,6 +236,10 @@ export default function AboutPage() {
                 Register as Vendor
               </Link>
             </div>
+            <div className="mt-8 flex justify-center items-center gap-2 text-xs text-white/70">
+              <Phone className="h-3.5 w-3.5" />
+              <span>Questions? Contact support at <a href="mailto:support@neighborlink.in" className="underline hover:text-white transition-colors">support@neighborlink.in</a></span>
+            </div>
           </div>
         </div>
       </section>

@@ -139,7 +139,10 @@ function DealsContent() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05, duration: 0.4 }}
-                className="clay-card card-spotlight p-5 flex flex-col justify-between border border-white/5 relative overflow-hidden group hover:scale-[1.02] transition-all"
+                className={cn(
+                  "clay-card card-spotlight p-5 flex flex-col justify-between border relative overflow-hidden group hover:scale-[1.02] transition-all",
+                  deal.discountPercent >= 20 ? "border-brand-primary/20 bg-brand-primary/[0.01]" : "border-white/5"
+                )}
               >
                 <div>
                   {/* Deal Header Badge */}
@@ -148,7 +151,14 @@ function DealsContent() {
                       <TrendingDown className="h-3.5 w-3.5" />
                       <span>{deal.discountPercent}% OFF</span>
                     </span>
-                    <CountdownTimer validUntil={deal.validUntil} />
+                    <div className="flex items-center gap-1.5">
+                      {deal.vendor?.verificationTier === "TOP_RATED" && (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-amber-500/20 text-amber-500 border border-amber-500/30" title="Top Rated Vendor">
+                          <Sparkles className="h-3 w-3" />
+                        </span>
+                      )}
+                      <CountdownTimer validUntil={deal.validUntil} />
+                    </div>
                   </div>
 
                   {/* Title & Desc */}
@@ -166,15 +176,24 @@ function DealsContent() {
                 {/* Vendor Footer Details */}
                 {deal.vendor && (
                   <div className="border-t border-white/5 pt-3.5 mt-auto flex items-center justify-between">
-                    <div>
-                      <p className="text-[11px] font-bold text-text-primary truncate max-w-[150px]">
-                        {deal.vendor.businessName}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <Building2 className="h-3.5 w-3.5 text-text-secondary shrink-0" />
+                        <p className="text-[11px] font-bold text-text-primary truncate max-w-[130px]" title={deal.vendor.businessName}>
+                          {deal.vendor.businessName}
+                        </p>
+                        {typeof deal.vendor.ratingAvg === "number" && deal.vendor.ratingAvg > 0 && (
+                          <span className="flex items-center gap-0.5 text-[10px] font-semibold text-amber-500 shrink-0 ml-1">
+                            <Star className="h-3 w-3 fill-amber-500 stroke-amber-500" />
+                            {deal.vendor.ratingAvg.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[9px] text-text-muted mt-0.5">{deal.vendor.category}</p>
                     </div>
                     <button
                       onClick={() => router.push(`/directory?category=${deal.vendor?.category}`)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white transition-all"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white transition-all shrink-0 ml-2"
                       aria-label="View vendor details"
                     >
                       <ArrowRight className="h-4 w-4" />

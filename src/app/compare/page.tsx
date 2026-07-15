@@ -71,6 +71,7 @@ function CompareContent() {
     { key: "distance", label: "Distance", icon: MapPin },
     { key: "price", label: "Price", icon: IndianRupee },
     { key: "hours", label: "Working Hours", icon: Clock },
+    { key: "phone", label: "Contact Phone", icon: Phone },
     { key: "response", label: "Response Time", icon: MessageSquare },
     { key: "verification", label: "Verification", icon: CheckCircle },
   ] as const;
@@ -90,6 +91,8 @@ function CompareContent() {
         return price ? `₹${price.rate} / ${price.unit}` : "Not listed";
       case "hours":
         return hours ? `${hours.open} – ${hours.close}` : "Not listed";
+      case "phone":
+        return vendor.phone ? formatPhone(vendor.phone) : "Not listed";
       case "response":
         return vendor.responseTimeMin
           ? `~${vendor.responseTimeMin} mins`
@@ -107,6 +110,9 @@ function CompareContent() {
 
   const getBestForField = (key: string): string | null => {
     if (selectedVendors.length < 2) return null;
+    const comparableFields = ["rating", "distance", "price", "response", "verification"];
+    if (!comparableFields.includes(key)) return null;
+
     let bestId: string | null = null;
     let bestScore = -Infinity;
 
@@ -324,13 +330,27 @@ function CompareContent() {
                     <td key={v.id} className="p-3 text-center">
                       <div className="flex flex-col gap-2">
                         {v.phone && (
-                          <a
-                            href={telLink(v.phone)}
-                            className="flex items-center justify-center gap-1.5 rounded-xl bg-success/10 py-2 text-xs font-bold text-success hover:bg-success/20 transition-all"
-                          >
-                            <Phone className="h-3.5 w-3.5" />
-                            Call
-                          </a>
+                          <>
+                            <a
+                              href={telLink(v.phone)}
+                              className="flex items-center justify-center gap-1.5 rounded-xl bg-success/10 py-2 text-xs font-bold text-success hover:bg-success/20 transition-all"
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                              Call
+                            </a>
+                            <a
+                              href={whatsappLink(
+                                v.phone,
+                                `Hello ${v.businessName}, I found you on NeighborLink and would like to inquire about your services.`
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600/10 py-2 text-xs font-bold text-emerald-500 hover:bg-emerald-600/20 transition-all"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              WhatsApp
+                            </a>
+                          </>
                         )}
                         <button
                           onClick={() => router.push(`/vendor/${v.id}`)}

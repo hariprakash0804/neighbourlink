@@ -154,8 +154,9 @@ function ChatContent() {
               <MessageSquare className="h-4 w-4 text-brand-primary" />
               <span>Inbox Messages</span>
             </h2>
-            <span className="text-[10px] bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full font-bold select-none">
-              Live Polling
+            <span className="text-[10px] bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full font-bold select-none flex items-center gap-1">
+              <Clock className="h-2.5 w-2.5 animate-pulse" />
+              <span>Live Polling</span>
             </span>
           </div>
 
@@ -186,7 +187,7 @@ function ChatContent() {
                     key={c.user.id}
                     onClick={() => router.push(`/chat?recipientId=${c.user.id}`)}
                     className={cn(
-                      "w-full text-left p-3 rounded-xl transition-all flex items-start justify-between gap-3 relative select-none",
+                      "w-full text-left p-3 rounded-xl transition-all flex items-start justify-between gap-3 relative select-none group",
                       isSelected
                         ? "bg-brand-primary/10 border border-brand-primary/20 text-brand-primary"
                         : "hover:bg-white/5 border border-transparent text-text-secondary"
@@ -216,18 +217,24 @@ function ChatContent() {
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <span className="text-[9px] text-text-muted">
-                        {new Date(c.lastMessage.createdAt).toLocaleTimeString("en-IN", {
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}
-                      </span>
-                      {c.unreadCount > 0 && (
-                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-primary text-[8px] font-bold text-white">
-                          {c.unreadCount > 9 ? '9+' : c.unreadCount}
+                      <span className="text-[9px] text-text-muted flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5 opacity-65" />
+                        <span>
+                          {new Date(c.lastMessage.createdAt).toLocaleTimeString("en-IN", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
                         </span>
-                      )}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {c.unreadCount > 0 && (
+                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-primary text-[8px] font-bold text-white">
+                            {c.unreadCount > 9 ? '9+' : c.unreadCount}
+                          </span>
+                        )}
+                        <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all text-text-muted" />
+                      </div>
                     </div>
                   </button>
                 );
@@ -316,7 +323,10 @@ function ChatContent() {
                             <div className="flex-1 h-px bg-white/5" />
                           </div>
                         )}
-                        <div
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
                           className={cn(
                             "flex w-full",
                             isMe ? "justify-end" : "justify-start"
@@ -347,7 +357,7 @@ function ChatContent() {
                               )}
                             </span>
                           </div>
-                        </div>
+                        </motion.div>
                       </div>
                     );
                   })
@@ -401,6 +411,14 @@ function ChatContent() {
                     aria-label="Toggle emoji picker"
                   >
                     <Smile className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toast.info("File attachment capability will be available soon!")}
+                    className="rounded-xl p-2.5 text-text-muted hover:text-text-secondary hover:bg-white/5 transition-all shrink-0"
+                    aria-label="Attach files"
+                  >
+                    <Paperclip className="h-4 w-4" />
                   </button>
                   <input
                     type="text"

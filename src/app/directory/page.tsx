@@ -227,8 +227,8 @@ function DirectoryContent() {
   const error = isEssential ? essentialError : vendorError;
 
   // Extract lists
-  const services = essentialData?.services || [];
-  const rawVendors = vendorData?.vendors || [];
+  const services = useMemo(() => essentialData?.services || [], [essentialData?.services]);
+  const rawVendors = useMemo(() => vendorData?.vendors || [], [vendorData?.vendors]);
 
   // Sort vendors
   const vendors = useMemo(() => {
@@ -393,9 +393,13 @@ function DirectoryContent() {
             </span>
           )}
 
-          <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary glass rounded-full px-3.5 py-1.5 border border-white/5">
+          <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary glass rounded-full px-3.5 py-1.5 border border-white/5 relative group">
             <MapPin className="h-3.5 w-3.5 text-brand-primary" />
             <span>Near {centerLoc?.locality}</span>
+            <HelpCircle className="h-3.5 w-3.5 text-text-muted hover:text-text-primary cursor-help transition-colors" />
+            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block w-48 p-2.5 bg-surface-primary border border-white/10 rounded-xl text-[10px] font-normal leading-normal text-text-secondary shadow-xl z-50 pointer-events-none">
+              Results are filtered based on your address. Update your address in your Profile to search other areas.
+            </div>
           </div>
 
           {/* Sort dropdown (vendors only) */}

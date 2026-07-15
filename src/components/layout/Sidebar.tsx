@@ -59,7 +59,10 @@ function CategoryChip({
 export function Sidebar({ className }: SidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeCategory = searchParams.get("category");
+  const pathname = usePathname();
+  
+  const isDirectoryPage = pathname === "/directory";
+  const activeCategory = isDirectoryPage ? searchParams.get("category") : null;
   
   const [essentialCollapsed, setEssentialCollapsed] = useState(false);
   const [vendorCollapsed, setVendorCollapsed] = useState(false);
@@ -91,7 +94,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   const handleCategoryClick = (categoryVal: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (activeCategory === categoryVal) {
+    if (isDirectoryPage && searchParams.get("category") === categoryVal) {
       params.delete("category");
     } else {
       params.set("category", categoryVal);

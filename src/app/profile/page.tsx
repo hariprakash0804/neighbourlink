@@ -8,7 +8,7 @@ import {
   User as UserIcon,
   Mail,
   Phone,
-  ShieldCheck,
+  ShieldCheck,  
   CheckCircle2,
   ChevronLeft,
   Save,
@@ -21,13 +21,14 @@ import {
   Bell,
   ChevronRight,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
-  const { data: session, status, update: updateSession } = useSession();
+  const { status, update: updateSession } = useSession();
   const router = useRouter();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -42,6 +43,10 @@ export default function ProfilePage() {
     enabled: status === "authenticated",
   });
 
+  const { data: addresses, refetch: refetchAddresses } = trpc.location.getAddresses.useQuery(undefined, {
+    enabled: status === "authenticated",
+  });
+
   const updateProfileMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: async () => {
       setSaveSuccess(true);
@@ -49,6 +54,12 @@ export default function ProfilePage() {
       // Update next-auth session cache
       await updateSession();
       setTimeout(() => setSaveSuccess(false), 2500);
+    },
+  });
+
+  const deleteAddressMutation = trpc.location.deleteAddress.useMutation({
+    onSuccess: async () => {
+      await refetchAddresses();
     },
   });
 
@@ -371,6 +382,75 @@ export default function ProfilePage() {
               <span>Profile updated successfully! Session cached.</span>
             </motion.div>
           )}
+        </motion.div>
+
+        {/* Saved Locations */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="clay-card p-6 md:p-8 space-y-6"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 text-brand-primary" />
+              Saved Locations
+            </h3>
+            <span className="text-[10px] text-text-secondary/60 bg-white/5 px-2 py-0.5 rounded-full">
+              {addresses?.length || 0} Saved
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {addresses && addresses.length > 0 ? (
+              addresses.map((addr) => (
+                <div
+                  key={addr.id}
+                  className={cn(
+                    "flex items-center justify-between p-3.5 rounded-2xl transition-all border",
+                    "bg-white/5 border-white/5 hover:border-brand-primary/20"
+                  )}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-primary/10 shrink-0">
+                      <MapPin className="h-4.5 w-4.5 text-brand-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-text-primary truncate">{addr.label}</p>
+                      <p className="text-xs text-text-secondary/80 truncate">
+                        Pincode: {addr.pincode} • Radius: {addr.radiusMeters >= 1000 ? `${addr.radiusMeters / 1000}km` : `${addr.radiusMeters}m`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      if (window.confirm(`Are you sure you want to delete "${addr.label}"?`)) {
+                        try {
+                          await deleteAddressMutation.mutateAsync({ addressId: addr.id });
+                        } catch (err: any) {
+                          window.alert(err.message || "Failed to delete address.");
+                        }
+                      }
+                    }}
+                    disabled={deleteAddressMutation.isPending}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-danger/10 text-text-secondary hover:text-danger transition-all shrink-0"
+                    title="Delete location"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 border border-dashed border-white/10 rounded-2xl">
+                <MapPin className="h-8 w-8 text-text-muted mx-auto mb-2 opacity-30 animate-pulse" />
+                <p className="text-xs text-text-muted font-bold">No saved locations yet.</p>
+                <p className="text-[10px] text-text-secondary/50 mt-1 max-w-[220px] mx-auto leading-normal">
+                  Use the location selector in the top navigation bar to search and save your neighborhood location.
+                </p>
+              </div>
+            )}
+          </div>
         </motion.div>
 
         {/* Danger Zone */}
