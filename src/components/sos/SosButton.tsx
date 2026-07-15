@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertOctagon, ShieldAlert, Phone, MapPin, X } from "lucide-react";
@@ -8,46 +8,46 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { AuthModal } from "../auth/AuthModal";
 
+interface SosAlertResult {
+  locationLink: string;
+  contactsNotified: string[];
+}
+
 export function SosButton() {
   const { data: session } = useSession();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isHolding, setIsHolding] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
   const [isTriggered, setIsTriggered] = useState(false);
-  const [alertResult, setAlertResult] = useState<any>(null);
+  const [alertResult, setAlertResult] = useState<SosAlertResult | null>(null);
   
   const holdIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const triggerSos = trpc.sos.trigger.useMutation();
 
-  const handleStartHold = () => {
-    if (!session?.user) {
-      setIsAuthModalOpen(true);
-      return;
-    }
-    setIsHolding(true);
-    setHoldProgress(0);
-
-    const startTime = Date.now();
-    holdIntervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(100, (elapsed / 1500) * 100); // 1.5s hold time
-      setHoldProgress(progress);
-
-      if (progress >= 100) {
-        handleTriggerSos();
-      }
-    }, 30);
-  };
-
-  const handleEndHold = () => {
+  const handleEndHold = useCallback(() => {
     setIsHolding(false);
     setHoldProgress(0);
     if (holdIntervalRef.current) {
       clearInterval(holdIntervalRef.current);
     }
-  };
+  }, []);
 
-  const handleTriggerSos = () => {
+  const executeSos = useCallback(async (lat: number, lng: number) => {
+    try {
+      setIsTriggered(true);
+      const res = await triggerSos.mutateAsync({
+        lat,
+        lng,
+        message: "🚨 EMERGENCY SOS triggered by resident from NeighborLink! Send help immediately.",
+        emergencyContacts: ["112", "100", "102"], // National, Police, Ambulance
+      });
+      setAlertResult(res);
+    } catch (err) {
+      console.error("SOS trigger failed:", err);
+    }
+  }, [triggerSos]);
+
+  const handleTriggerSos = useCallback(() => {
     handleEndHold();
     
     // Obtain geolocation
@@ -65,22 +65,27 @@ export function SosButton() {
     } else {
       executeSos(12.9716, 77.5946);
     }
-  };
+  }, [handleEndHold, executeSos]);
 
-  const executeSos = async (lat: number, lng: number) => {
-    try {
-      setIsTriggered(true);
-      const res = await triggerSos.mutateAsync({
-        lat,
-        lng,
-        message: "🚨 EMERGENCY SOS triggered by resident from NeighborLink! Send help immediately.",
-        emergencyContacts: ["112", "100", "102"], // National, Police, Ambulance
-      });
-      setAlertResult(res);
-    } catch (err) {
-      console.error("SOS trigger failed:", err);
+  const handleStartHold = useCallback(() => {
+    if (!session?.user) {
+      setIsAuthModalOpen(true);
+      return;
     }
-  };
+    setIsHolding(true);
+    setHoldProgress(0);
+
+    const startTime = Date.now();
+    holdIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(100, (elapsed / 1500) * 100); // 1.5s hold time
+      setHoldProgress(progress);
+
+      if (progress >= 100) {
+        handleTriggerSos();
+      }
+    }, 30);
+  }, [session, handleTriggerSos]);
 
   useEffect(() => {
     const handleTriggerEvent = () => {
@@ -95,7 +100,7 @@ export function SosButton() {
       window.removeEventListener("trigger-sos", handleTriggerEvent);
       if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
     };
-  }, [session]);
+  }, [session, handleTriggerSos]);
 
   return (
     <>

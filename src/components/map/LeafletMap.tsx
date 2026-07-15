@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
 import L from "leaflet";
-import { cn } from "@/lib/utils";
 
 // Fix Leaflet marker icon issues (SVG-based markers instead of PNGs to match morphism)
 const createCustomIcon = (color: string, isCenter: boolean = false) => {
@@ -53,7 +52,7 @@ interface LeafletMapProps {
 }
 
 // Helper component to auto-recenter and fit bounds
-function MapController({ center, markers, radiusMeters }: { center: [number, number]; markers?: MapMarker[]; radiusMeters?: number }) {
+function MapController({ center, markers }: { center: [number, number]; markers?: MapMarker[] }) {
   const map = useMap();
 
   useEffect(() => {
@@ -138,7 +137,7 @@ export default function LeafletMap({ center, radiusMeters, markers = [], zoom = 
         })}
 
         {/* Map Recenter Controller */}
-        <MapController center={center} markers={markers} radiusMeters={radiusMeters} />
+        <MapController center={center} markers={markers} />
       </MapContainer>
     </div>
   );

@@ -12,7 +12,6 @@
 // In production, use Redis with TTL
 const otpStore = new Map<string, { otp: string; expiresAt: number; attempts: number }>();
 
-const OTP_LENGTH = 6;
 const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_ATTEMPTS = 3;
 const RATE_LIMIT_MS = 60 * 1000; // 1 minute between sends

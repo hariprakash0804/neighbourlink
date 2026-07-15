@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ESSENTIAL_CATEGORY_META, VENDOR_CATEGORY_META, type CategoryMeta } from "@/lib/constants";
-import { ChevronRight, Building2, Wrench, History, Sparkles } from "lucide-react";
+import { ChevronRight, Building2, Wrench, History } from "lucide-react";
 
 interface SidebarProps {
   className?: string;
@@ -59,7 +59,6 @@ function CategoryChip({
 export function Sidebar({ className }: SidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const pathname = usePathname();
   const activeCategory = searchParams.get("category");
   
   const [essentialCollapsed, setEssentialCollapsed] = useState(false);
@@ -71,7 +70,10 @@ export function Sidebar({ className }: SidebarProps) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem("nl_recent_categories");
-      if (stored) setRecentViewed(JSON.parse(stored).slice(0, 3));
+      if (stored) {
+        const parsed = JSON.parse(stored).slice(0, 3);
+        setTimeout(() => setRecentViewed(parsed), 0);
+      }
     } catch {
       // Ignore
     }

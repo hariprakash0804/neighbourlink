@@ -856,6 +856,97 @@ Deal.init(
 Vendor.hasMany(Deal, { foreignKey: "vendorId", as: "deals" });
 Deal.belongsTo(Vendor, { foreignKey: "vendorId", as: "vendor" });
 
+// ─── Carpool ──────────────────────────────────────────────────────────────────
+export class Carpool extends Model<InferAttributes<Carpool>, InferCreationAttributes<Carpool>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare origin: string;
+  declare destination: string;
+  declare departureTime: Date;
+  declare seatsAvailable: number;
+  declare pricePerSeat: CreationOptional<number>;
+  declare lat: number;
+  declare lng: number;
+  declare notes: CreationOptional<string | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare driver?: User;
+}
+
+Carpool.init(
+  {
+    id: { type: DataTypes.STRING(50), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+    userId: { type: DataTypes.STRING(50), allowNull: false },
+    origin: { type: DataTypes.STRING(255), allowNull: false },
+    destination: { type: DataTypes.STRING(255), allowNull: false },
+    departureTime: { type: DataTypes.DATE, allowNull: false },
+    seatsAvailable: { type: DataTypes.INTEGER, allowNull: false },
+    pricePerSeat: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    lat: { type: DataTypes.FLOAT, allowNull: false },
+    lng: { type: DataTypes.FLOAT, allowNull: false },
+    notes: { type: DataTypes.TEXT, allowNull: true },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  {
+    sequelize,
+    modelName: "Carpool",
+    tableName: "carpools",
+    indexes: [{ fields: ["lat", "lng"] }, { fields: ["userId"] }],
+  }
+);
+
+// ─── Job Post ─────────────────────────────────────────────────────────────────
+export const JOB_CATEGORIES = ["CLEANING", "GARDENING", "DELIVERY", "TUTORING", "PET_CARE", "BABYSITTING", "OTHER"] as const;
+export type JobCategory = (typeof JOB_CATEGORIES)[number];
+
+export class JobPost extends Model<InferAttributes<JobPost>, InferCreationAttributes<JobPost>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare title: string;
+  declare description: string;
+  declare category: JobCategory;
+  declare compensation: number;
+  declare lat: number;
+  declare lng: number;
+  declare phone: string;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  // Associations
+  declare poster?: User;
+}
+
+JobPost.init(
+  {
+    id: { type: DataTypes.STRING(50), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+    userId: { type: DataTypes.STRING(50), allowNull: false },
+    title: { type: DataTypes.STRING(255), allowNull: false },
+    description: { type: DataTypes.TEXT, allowNull: false },
+    category: { type: DataTypes.ENUM(...JOB_CATEGORIES), allowNull: false },
+    compensation: { type: DataTypes.INTEGER, allowNull: false },
+    lat: { type: DataTypes.FLOAT, allowNull: false },
+    lng: { type: DataTypes.FLOAT, allowNull: false },
+    phone: { type: DataTypes.STRING(20), allowNull: false },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  {
+    sequelize,
+    modelName: "JobPost",
+    tableName: "job_posts",
+    indexes: [{ fields: ["lat", "lng"] }, { fields: ["userId"] }],
+  }
+);
+
+// Associations
+User.hasMany(Carpool, { foreignKey: "userId", as: "carpools" });
+Carpool.belongsTo(User, { foreignKey: "userId", as: "driver" });
+
+User.hasMany(JobPost, { foreignKey: "userId", as: "jobPosts" });
+JobPost.belongsTo(User, { foreignKey: "userId", as: "poster" });
 
 // ─── Sync helper (dev only) ──────────────────────────────────────────────────
 export async function syncDatabase(force = false) {

@@ -15,6 +15,8 @@ import { sosRouter } from "./sos";
 import { favoritesRouter } from "./favorites";
 import { notificationsRouter } from "./notifications";
 import { dealsRouter } from "./deals";
+import { carpoolRouter } from "./carpool";
+import { jobsRouter } from "./jobs";
 
 export const appRouter = router({
   auth: authRouter,
@@ -33,6 +35,8 @@ export const appRouter = router({
   favorites: favoritesRouter,
   notifications: notificationsRouter,
   deals: dealsRouter,
+  carpool: carpoolRouter,
+  jobs: jobsRouter,
 });
 
 export type AppRouter = typeof appRouter;

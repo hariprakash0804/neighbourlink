@@ -3,7 +3,6 @@ import { z } from "zod";
 import { CivicReport, User } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
 import { haversineDistance } from "@/lib/utils";
-import { Op } from "sequelize";
 import { containsProfanityOrSpam } from "@/lib/moderation";
 
 export const civicRouter = router({

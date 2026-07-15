@@ -71,7 +71,7 @@ export function QuickActions() {
         router.push("/community?tab=bulletin&create=true");
         break;
       case "call112":
-        window.location.href = "tel:112";
+        window.location.assign("tel:112");
         break;
     }
   };

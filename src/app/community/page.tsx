@@ -16,23 +16,24 @@ import {
   Tag,
   Building,
   UploadCloud,
-  ChevronRight,
-  Eye,
   CheckCircle,
   Share2,
-  ThumbsUp,
-  Heart,
-  MessageCircle,
+  Car,
+  Briefcase,
+  PhoneCall,
+  DollarSign,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn, timeAgo, shareContent } from "@/lib/utils";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useToast } from "@/components/providers/ToastProvider";
 
+type ActiveTab = "bulletin" | "civic" | "events" | "carpool" | "jobs";
+
 export default function CommunityHubPage() {
   const { data: session } = useSession();
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState<"bulletin" | "civic" | "events">("bulletin");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("bulletin");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Default coordinates ( Bangalore )
@@ -69,6 +70,17 @@ export default function CommunityHubPage() {
   const [venue, setVenue] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  // Carpool Form Fields
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
+  const [departureTime, setDepartureTime] = useState("");
+  const [seatsAvailable, setSeatsAvailable] = useState(1);
+  const [pricePerSeat, setPricePerSeat] = useState(0);
+
+  // Job Form Fields
+  const [compensation, setCompensation] = useState(0);
+  const [phone, setPhone] = useState("");
 
   // ─── tRPC Queries & Mutations ───────────────────────────────────────────────
   // Bulletin
@@ -149,6 +161,58 @@ export default function CommunityHubPage() {
     },
   });
 
+  // Carpool
+  const { data: carpoolData, refetch: refetchCarpool } = trpc.carpool.listNearby.useQuery(
+    { lat: userLocation.lat, lng: userLocation.lng, radius: 5000 },
+    { enabled: activeTab === "carpool" }
+  );
+  const createCarpool = trpc.carpool.create.useMutation({
+    onSuccess: () => {
+      setIsFormOpen(false);
+      resetForm();
+      refetchCarpool();
+      toast.success("Carpool offer created successfully!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to create carpool.");
+    },
+  });
+  const deleteCarpool = trpc.carpool.delete.useMutation({
+    onSuccess: () => {
+      refetchCarpool();
+      toast.success("Carpool offer deleted successfully.");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to delete carpool.");
+    },
+  });
+
+  // Jobs
+  const { data: jobsData, refetch: refetchJobs } = trpc.jobs.listNearby.useQuery(
+    { lat: userLocation.lat, lng: userLocation.lng, radius: 5000 },
+    { enabled: activeTab === "jobs" }
+  );
+  const createJob = trpc.jobs.create.useMutation({
+    onSuccess: () => {
+      setIsFormOpen(false);
+      resetForm();
+      refetchJobs();
+      toast.success("Job posting created successfully!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to create job posting.");
+    },
+  });
+  const deleteJob = trpc.jobs.delete.useMutation({
+    onSuccess: () => {
+      refetchJobs();
+      toast.success("Job posting deleted successfully.");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to delete job posting.");
+    },
+  });
+
   const resetForm = () => {
     setTitle("");
     setContent("");
@@ -156,6 +220,13 @@ export default function CommunityHubPage() {
     setVenue("");
     setStartDate("");
     setEndDate("");
+    setOrigin("");
+    setDestination("");
+    setDepartureTime("");
+    setSeatsAvailable(1);
+    setPricePerSeat(0);
+    setCompensation(0);
+    setPhone("");
     setUploadedUrl(null);
   };
 
@@ -224,6 +295,27 @@ export default function CommunityHubPage() {
           lat: userLocation.lat,
           lng: userLocation.lng,
         });
+      } else if (activeTab === "carpool") {
+        await createCarpool.mutateAsync({
+          origin,
+          destination,
+          departureTime: new Date(departureTime).toISOString(),
+          seatsAvailable,
+          pricePerSeat,
+          lat: userLocation.lat,
+          lng: userLocation.lng,
+          notes: content || undefined,
+        });
+      } else if (activeTab === "jobs") {
+        await createJob.mutateAsync({
+          title,
+          description: content,
+          category: (category || "OTHER") as any,
+          compensation,
+          lat: userLocation.lat,
+          lng: userLocation.lng,
+          phone,
+        });
       }
     } catch (err) {
       console.error(err);
@@ -251,7 +343,7 @@ export default function CommunityHubPage() {
               Community Hub
             </h1>
             <p className="text-xs text-text-secondary mt-1">
-              Join neighbor bulletin boards, report local civic issues, or coordinate upcoming community events.
+              Join neighbor bulletin boards, report local civic issues, share rides, find local jobs, or coordinate upcoming community events.
             </p>
           </div>
           <button
@@ -272,7 +364,7 @@ export default function CommunityHubPage() {
 
       {/* Tabs Selector */}
       <div className="max-w-4xl mx-auto px-4 mt-6">
-        <div className="flex gap-1 p-1 glass rounded-xl w-fit">
+        <div className="flex flex-wrap gap-1 p-1 glass rounded-xl w-fit">
           <button
             onClick={() => setActiveTab("bulletin")}
             className={cn(
@@ -308,6 +400,30 @@ export default function CommunityHubPage() {
           >
             <CalendarIcon className="h-4 w-4" />
             <span>Local Events</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("carpool")}
+            className={cn(
+              "px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5",
+              activeTab === "carpool"
+                ? "bg-brand-primary text-white shadow-sm"
+                : "text-text-secondary hover:text-text-primary"
+            )}
+          >
+            <Car className="h-4 w-4" />
+            <span>Carpooling</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("jobs")}
+            className={cn(
+              "px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5",
+              activeTab === "jobs"
+                ? "bg-brand-primary text-white shadow-sm"
+                : "text-text-secondary hover:text-text-primary"
+            )}
+          >
+            <Briefcase className="h-4 w-4" />
+            <span>Local Jobs</span>
           </button>
         </div>
       </div>
@@ -545,6 +661,181 @@ export default function CommunityHubPage() {
             )}
           </motion.div>
         )}
+
+        {/* Tab 4: Carpooling */}
+        {activeTab === "carpool" && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="grid gap-4 md:grid-cols-2"
+          >
+            {carpoolData?.carpools.map((ride) => (
+              <div key={ride.id} className="clay-card p-5 border border-white/5 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20 flex items-center gap-1">
+                      <Car className="h-3.5 w-3.5" />
+                      Carpool Ride
+                    </span>
+                    {session?.user && ride.userId === session.user.id && (
+                      <button
+                        onClick={() => deleteCarpool.mutate({ carpoolId: ride.id })}
+                        className="text-text-secondary hover:text-destructive transition-colors animate-pulse"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Origin & Destination Route */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-brand-primary" />
+                      <span className="text-xs text-text-secondary">From: </span>
+                      <span className="text-xs font-bold text-text-primary">{ride.origin}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-success" />
+                      <span className="text-xs text-text-secondary">To: </span>
+                      <span className="text-xs font-bold text-text-primary">{ride.destination}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 p-2.5 rounded-xl space-y-1.5 text-[11px] border border-white/5">
+                    <p className="text-text-secondary flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-amber-400" />
+                      Departure: <span className="text-text-primary font-semibold">{new Date(ride.departureTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span>
+                    </p>
+                    <p className="text-text-secondary flex items-center gap-1.5">
+                      <UserIcon className="h-3.5 w-3.5 text-blue-400" />
+                      Seats Available: <span className="text-text-primary font-extrabold">{ride.seatsAvailable} seats</span>
+                    </p>
+                    <p className="text-text-secondary flex items-center gap-1.5">
+                      <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
+                      Price per Seat: <span className="text-text-primary font-extrabold">{ride.pricePerSeat > 0 ? `₹${ride.pricePerSeat}` : "Free"}</span>
+                    </p>
+                  </div>
+
+                  {ride.notes && (
+                    <p className="text-xs text-text-muted italic bg-surface-tertiary/40 p-2.5 rounded-lg border border-white/5 leading-relaxed">
+                      "{ride.notes}"
+                    </p>
+                  )}
+                </div>
+
+                <div className="pt-3 border-t border-white/5 flex flex-col sm:flex-row gap-2 items-center justify-between">
+                  <div className="text-[10px] text-text-secondary/60 flex items-center gap-1.5 self-start">
+                    <MapPin className="h-3.5 w-3.5 text-brand-primary" />
+                    <span>{ride.distanceM}m away</span>
+                    <span>•</span>
+                    <span>By {ride.driverName}</span>
+                  </div>
+                  {ride.driverPhone && (
+                    <div className="flex gap-1.5 w-full sm:w-auto mt-2 sm:mt-0">
+                      <a
+                        href={`tel:${ride.driverPhone}`}
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold transition-all border border-emerald-500/20 shrink-0"
+                      >
+                        <PhoneCall className="h-3.5 w-3.5" />
+                        <span>Call</span>
+                      </a>
+                      <a
+                        href={`https://wa.me/${ride.driverPhone}?text=Hi%20${encodeURIComponent(ride.driverName)},%20I'm%20interested%20in%20your%20carpool%20from%20${encodeURIComponent(ride.origin)}%20to%20${encodeURIComponent(ride.destination)}%20on%20NeighborLink!`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary text-[10px] font-bold transition-all border border-brand-primary/20 shrink-0"
+                      >
+                        <span>WhatsApp</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {carpoolData?.carpools.length === 0 && (
+              <div className="col-span-2 text-center text-xs text-text-secondary py-16">
+                No active carpool offers in your area. Offer a ride to get started!
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Tab 5: Local Jobs */}
+        {activeTab === "jobs" && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="grid gap-4 md:grid-cols-2"
+          >
+            {jobsData?.jobs.map((job) => (
+              <div key={job.id} className="clay-card p-5 border border-white/5 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded border border-purple-500/20 flex items-center gap-1">
+                      <Briefcase className="h-3.5 w-3.5" />
+                      {job.category}
+                    </span>
+                    {session?.user && job.userId === session.user.id && (
+                      <button
+                        onClick={() => deleteJob.mutate({ jobId: job.id })}
+                        className="text-text-secondary hover:text-destructive transition-colors animate-pulse"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <h3 className="font-bold text-sm text-text-primary leading-snug">{job.title}</h3>
+                  <p className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">{job.description}</p>
+
+                  <div className="bg-white/5 p-2.5 rounded-xl flex items-center justify-between text-xs border border-white/5">
+                    <span className="text-text-secondary">Compensation:</span>
+                    <span className="text-success font-black text-sm flex items-center">
+                      ₹{job.compensation.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-white/5 flex flex-col sm:flex-row gap-2 items-center justify-between">
+                  <div className="text-[10px] text-text-secondary/60 flex items-center gap-1.5 self-start">
+                    <MapPin className="h-3.5 w-3.5 text-brand-primary" />
+                    <span>{job.distanceM}m away</span>
+                    <span>•</span>
+                    <span>Posted by {job.posterName}</span>
+                  </div>
+                  {job.phone && (
+                    <div className="flex gap-1.5 w-full sm:w-auto mt-2 sm:mt-0">
+                      <a
+                        href={`tel:${job.phone}`}
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold transition-all border border-emerald-500/20 shrink-0"
+                      >
+                        <PhoneCall className="h-3.5 w-3.5" />
+                        <span>Call</span>
+                      </a>
+                      <a
+                        href={`https://wa.me/${job.phone}?text=Hi,%20I'm%20interested%20in%20your%20job%20posting%20"${encodeURIComponent(job.title)}"%20on%20NeighborLink!`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary text-[10px] font-bold transition-all border border-brand-primary/20 shrink-0"
+                      >
+                        <span>WhatsApp</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {jobsData?.jobs.length === 0 && (
+              <div className="col-span-2 text-center text-xs text-text-secondary py-16">
+                No local job posts in your area. Post a local vacancy to find talent nearby!
+              </div>
+            )}
+          </motion.div>
+        )}
       </div>
 
       {/* Creation Modal Form */}
@@ -560,7 +851,15 @@ export default function CommunityHubPage() {
               <div className="flex items-center justify-between border-b border-white/5 pb-2">
                 <h2 className="text-sm font-black uppercase tracking-wider text-text-primary flex items-center gap-1.5">
                   <Plus className="h-4 w-4 text-brand-primary" />
-                  <span>Create {activeTab === "bulletin" ? "Bulletin Post" : activeTab === "civic" ? "Civic Report" : "Event"}</span>
+                  <span>
+                    Create {
+                      activeTab === "bulletin" ? "Bulletin Post" 
+                      : activeTab === "civic" ? "Civic Report" 
+                      : activeTab === "events" ? "Event" 
+                      : activeTab === "carpool" ? "Carpool Ride Offer"
+                      : "Job Posting"
+                    }
+                  </span>
                 </h2>
                 <button
                   type="button"
@@ -572,151 +871,306 @@ export default function CommunityHubPage() {
               </div>
 
               <form onSubmit={handleCreateSubmit} className="space-y-4">
-                {activeTab !== "civic" && (
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-text-secondary/60 uppercase font-black">Title</label>
-                    <input
-                      type="text"
-                      required
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Give it a brief title..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-brand-primary/50"
-                    />
-                  </div>
-                )}
+                {/* Condition: Carpool Specific Form */}
+                {activeTab === "carpool" ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Origin / Start Location</label>
+                        <input
+                          type="text"
+                          required
+                          value={origin}
+                          onChange={(e) => setOrigin(e.target.value)}
+                          placeholder="e.g. Koramangala 3rd Block"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Destination</label>
+                        <input
+                          type="text"
+                          required
+                          value={destination}
+                          onChange={(e) => setDestination(e.target.value)}
+                          placeholder="e.g. Manyata Tech Park"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
+                        />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <label className="text-[10px] text-text-secondary/60 uppercase font-black">Category</label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full bg-surface-secondary border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
-                    >
-                      <option value="">Select Category</option>
-                      {activeTab === "bulletin" && (
-                        <>
-                          <option value="GENERAL">General Bulletin</option>
-                          <option value="ANNOUNCEMENT">Announcement</option>
-                          <option value="LOST_FOUND">Lost & Found</option>
-                          <option value="GARAGE_SALE">Garage Sale</option>
-                        </>
-                      )}
-                      {activeTab === "civic" && (
-                        <>
-                          <option value="Pothole">Pothole</option>
-                          <option value="Garbage">Garbage / Litter</option>
-                          <option value="Streetlight">Streetlight Issues</option>
-                          <option value="Water Leak">Water Leakage</option>
-                          <option value="Stray Animals">Stray Animals</option>
-                          <option value="Other">Other</option>
-                        </>
-                      )}
-                      {activeTab === "events" && (
-                        <>
-                          <option value="FESTIVAL">Festival / Celebration</option>
-                          <option value="MEETING">RWA Meeting</option>
-                          <option value="NOTICE">Official Notice</option>
-                          <option value="OTHER">Other Gathering</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1 col-span-3 sm:col-span-1">
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Departure Date/Time</label>
+                        <input
+                          type="datetime-local"
+                          required
+                          value={departureTime}
+                          onChange={(e) => setDepartureTime(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
+                        />
+                      </div>
+                      <div className="space-y-1 col-span-3 sm:col-span-1">
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Seats Available</label>
+                        <input
+                          type="number"
+                          required
+                          min={1}
+                          max={10}
+                          value={seatsAvailable}
+                          onChange={(e) => setSeatsAvailable(parseInt(e.target.value) || 1)}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
+                        />
+                      </div>
+                      <div className="space-y-1 col-span-3 sm:col-span-1">
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Price per Seat (₹)</label>
+                        <input
+                          type="number"
+                          required
+                          min={0}
+                          value={pricePerSeat}
+                          onChange={(e) => setPricePerSeat(parseInt(e.target.value) || 0)}
+                          placeholder="0 for Free"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
+                        />
+                      </div>
+                    </div>
 
-                  {activeTab === "events" && (
-                    <div className="space-y-1 col-span-2 sm:col-span-1">
-                      <label className="text-[10px] text-text-secondary/60 uppercase font-black">Venue</label>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-text-secondary/60 uppercase font-black">Notes (Optional)</label>
+                      <textarea
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        placeholder="Specify route details, vehicle details, preferences (e.g. no smoking)..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-brand-primary/50 resize-none"
+                        rows={3}
+                      />
+                    </div>
+                  </>
+                ) : activeTab === "jobs" ? (
+                  /* Condition: Job Specific Form */
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-text-secondary/60 uppercase font-black">Job Title</label>
                       <input
                         type="text"
                         required
-                        value={venue}
-                        onChange={(e) => setVenue(e.target.value)}
-                        placeholder="RWA Hall, Central Park, etc."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="e.g. Dog Walker Needed, House Cleaning Helper"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
                       />
                     </div>
-                  )}
-                </div>
 
-                {activeTab === "events" && (
-                  <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1 col-span-3 sm:col-span-1">
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Category</label>
+                        <select
+                          value={category}
+                          required
+                          onChange={(e) => setCategory(e.target.value)}
+                          className="w-full bg-surface-secondary border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
+                        >
+                          <option value="">Select Category</option>
+                          <option value="CLEANING">Cleaning</option>
+                          <option value="GARDENING">Gardening</option>
+                          <option value="DELIVERY">Delivery</option>
+                          <option value="TUTORING">Tutoring</option>
+                          <option value="PET_CARE">Pet Care</option>
+                          <option value="BABYSITTING">Babysitting</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1 col-span-3 sm:col-span-1">
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Compensation (₹)</label>
+                        <input
+                          type="number"
+                          required
+                          min={0}
+                          value={compensation}
+                          onChange={(e) => setCompensation(parseInt(e.target.value) || 0)}
+                          placeholder="Amount in Rupees"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
+                        />
+                      </div>
+
+                      <div className="space-y-1 col-span-3 sm:col-span-1">
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Contact Phone</label>
+                        <input
+                          type="text"
+                          required
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="Phone number"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-1">
-                      <label className="text-[10px] text-text-secondary/60 uppercase font-black">Start Date/Time</label>
-                      <input
-                        type="datetime-local"
+                      <label className="text-[10px] text-text-secondary/60 uppercase font-black">Description & Requirements</label>
+                      <textarea
                         required
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none"
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        placeholder="Provide details about the job, timings, location, and expectations..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-brand-primary/50 resize-none"
+                        rows={4}
                       />
                     </div>
+                  </>
+                ) : (
+                  /* Condition: Standard Forms (Bulletin, Civic, Event) */
+                  <>
+                    {activeTab !== "civic" && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Title</label>
+                        <input
+                          type="text"
+                          required
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="Give it a brief title..."
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-brand-primary/50"
+                        />
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1 col-span-2 sm:col-span-1">
+                        <label className="text-[10px] text-text-secondary/60 uppercase font-black">Category</label>
+                        <select
+                          value={category}
+                          onChange={(e) => setCategory(e.target.value)}
+                          className="w-full bg-surface-secondary border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-brand-primary/50"
+                        >
+                          <option value="">Select Category</option>
+                          {activeTab === "bulletin" && (
+                            <>
+                              <option value="GENERAL">General Bulletin</option>
+                              <option value="ANNOUNCEMENT">Announcement</option>
+                              <option value="LOST_FOUND">Lost & Found</option>
+                              <option value="GARAGE_SALE">Garage Sale</option>
+                            </>
+                          )}
+                          {activeTab === "civic" && (
+                            <>
+                              <option value="Pothole">Pothole</option>
+                              <option value="Garbage">Garbage / Litter</option>
+                              <option value="Streetlight">Streetlight Issues</option>
+                              <option value="Water Leak">Water Leakage</option>
+                              <option value="Stray Animals">Stray Animals</option>
+                              <option value="Other">Other</option>
+                            </>
+                          )}
+                          {activeTab === "events" && (
+                            <>
+                              <option value="FESTIVAL">Festival / Celebration</option>
+                              <option value="MEETING">RWA Meeting</option>
+                              <option value="NOTICE">Official Notice</option>
+                              <option value="OTHER">Other Gathering</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+
+                      {activeTab === "events" && (
+                        <div className="space-y-1 col-span-2 sm:col-span-1">
+                          <label className="text-[10px] text-text-secondary/60 uppercase font-black">Venue</label>
+                          <input
+                            type="text"
+                            required
+                            value={venue}
+                            onChange={(e) => setVenue(e.target.value)}
+                            placeholder="RWA Hall, Central Park, etc."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {activeTab === "events" && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-text-secondary/60 uppercase font-black">Start Date/Time</label>
+                          <input
+                            type="datetime-local"
+                            required
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-text-secondary/60 uppercase font-black">End Date/Time (Optional)</label>
+                          <input
+                            type="datetime-local"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-1">
-                      <label className="text-[10px] text-text-secondary/60 uppercase font-black">End Date/Time (Optional)</label>
-                      <input
-                        type="datetime-local"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none"
+                      <label className="text-[10px] text-text-secondary/60 uppercase font-black">
+                        {activeTab === "civic" ? "Issue Description" : "Post Content"}
+                      </label>
+                      <textarea
+                        required
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        placeholder="Write descriptions or details here..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-brand-primary/50 resize-none"
+                        rows={4}
                       />
                     </div>
-                  </div>
+
+                    {/* Photo Upload block */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Attachment Image</label>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center justify-center gap-1.5 px-4 py-2 border border-dashed border-white/20 rounded-xl cursor-pointer hover:bg-white/5 transition-all text-xs font-semibold text-text-secondary">
+                          <UploadCloud className="h-4 w-4" />
+                          <span>{uploading ? "Uploading..." : "Select Image"}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {uploadedUrl && (
+                          <span className="text-[10px] text-success font-bold flex items-center gap-1">
+                            <CheckCircle className="h-3.5 w-3.5" />
+                            Uploaded
+                          </span>
+                        )}
+                      </div>
+                      {uploadedUrl && (
+                        <img
+                          src={formatImageUrl(uploadedUrl)}
+                          alt="Preview"
+                          className="rounded-xl max-h-36 max-w-full object-cover border border-white/10 mt-1"
+                        />
+                      )}
+                    </div>
+                  </>
                 )}
 
-                <div className="space-y-1">
-                  <label className="text-[10px] text-text-secondary/60 uppercase font-black">
-                    {activeTab === "civic" ? "Issue Description" : "Post Content"}
-                  </label>
-                  <textarea
-                    required
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Write descriptions or details here..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-brand-primary/50 resize-none"
-                    rows={4}
-                  />
-                </div>
-
-                {/* Photo Upload block */}
-                <div className="space-y-2">
-                  <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Attachment Image</label>
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center justify-center gap-1.5 px-4 py-2 border border-dashed border-white/20 rounded-xl cursor-pointer hover:bg-white/5 transition-all text-xs font-semibold text-text-secondary">
-                      <UploadCloud className="h-4 w-4" />
-                      <span>{uploading ? "Uploading..." : "Select Image"}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </label>
-                    {uploadedUrl && (
-                      <span className="text-[10px] text-success font-bold flex items-center gap-1">
-                        <CheckCircle className="h-3.5 w-3.5" />
-                        Uploaded
-                      </span>
-                    )}
-                  </div>
-                  {uploadedUrl && (
-                    <img
-                      src={formatImageUrl(uploadedUrl)}
-                      alt="Preview"
-                      className="rounded-xl max-h-36 max-w-full object-cover border border-white/10 mt-1"
-                    />
-                  )}
-                </div>
-
-                {(createBulletin.error || createCivic.error || createEvent.error) && (
+                {/* Submission Errors display */}
+                {(createBulletin.error || createCivic.error || createEvent.error || createCarpool.error || createJob.error) && (
                   <p className="text-xs text-red-400">
-                    {createBulletin.error?.message || createCivic.error?.message || createEvent.error?.message}
+                    {createBulletin.error?.message || createCivic.error?.message || createEvent.error?.message || createCarpool.error?.message || createJob.error?.message}
                   </p>
                 )}
 
                 <div className="flex gap-2 pt-2">
                   <button
                     type="submit"
-                    disabled={createBulletin.isPending || createCivic.isPending || createEvent.isPending}
+                    disabled={createBulletin.isPending || createCivic.isPending || createEvent.isPending || createCarpool.isPending || createJob.isPending}
                     className="flex-1 rounded-xl bg-brand-primary py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 transition-all"
                   >
                     Submit

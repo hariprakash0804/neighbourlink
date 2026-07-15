@@ -1,6 +1,6 @@
 import { router, protectedProcedure, publicProcedure } from "../trpc";
 import { z } from "zod";
-import { Deal, Vendor, User } from "@/lib/models";
+import { Deal, Vendor } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
 import { Op } from "sequelize";
 

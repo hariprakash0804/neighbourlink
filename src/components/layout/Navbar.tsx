@@ -60,7 +60,7 @@ export function Navbar() {
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
   }, []);
 
   // Close profile dropdown on outside click
