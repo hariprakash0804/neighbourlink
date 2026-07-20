@@ -23,6 +23,7 @@ import {
   MessageSquare,
   Bell,
   Heart,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EMERGENCY_NUMBERS, APP_NAME } from "@/lib/constants";
@@ -431,7 +432,7 @@ export function Navbar() {
                             <MessageSquare className="h-4 w-4 text-brand-primary" />
                             <span>Chat Inbox</span>
                           </Link>
-                          {session.user.role !== "VENDOR" && (
+                          {session.user.role !== "VENDOR" && session.user.role !== "ADMIN" && (
                             <Link
                               href="/vendor/register"
                               onClick={() => setIsProfileOpen(false)}
@@ -440,6 +441,17 @@ export function Navbar() {
                             >
                               <Settings className="h-4 w-4" />
                               <span>Register as Vendor</span>
+                            </Link>
+                          )}
+                          {session.user.role === "ADMIN" && (
+                            <Link
+                              href="/admin/vendors"
+                              onClick={() => setIsProfileOpen(false)}
+                              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-brand-accent hover:bg-white/5 transition-colors font-semibold"
+                              role="menuitem"
+                            >
+                              <Shield className="h-4 w-4 text-brand-accent" />
+                              <span>Admin Panel</span>
                             </Link>
                           )}
                         </div>
