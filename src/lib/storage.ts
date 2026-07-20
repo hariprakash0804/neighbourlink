@@ -60,8 +60,23 @@ export async function uploadFile(
 
   // ─── LOCAL FILESYSTEM FALLBACK ───
   try {
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    const filePath = path.join(uploadDir, key);
+    const uploadDir = path.resolve(process.cwd(), "public", "uploads");
+
+    // Sanitize the key: strip path traversal patterns and control characters
+    const sanitizedKey = key
+      .replace(/\.\./g, "")             // strip directory traversal
+      .replace(/[\/\\]/g, "-")          // replace path separators with dashes
+      .replace(/[\x00-\x1f]/g, "")     // strip control characters
+      .replace(/[^a-zA-Z0-9._\-]/g, "_"); // replace remaining unsafe chars
+
+    const filePath = path.resolve(uploadDir, sanitizedKey);
+
+    // SECURITY: Verify the resolved path is still within the uploads directory
+    if (!filePath.startsWith(uploadDir)) {
+      console.error(`❌ Path traversal attempt blocked: key="${key}" resolved to "${filePath}"`);
+      throw new Error("Invalid file path");
+    }
+
     const parentDir = path.dirname(filePath);
     
     if (!fs.existsSync(parentDir)) {
@@ -69,8 +84,8 @@ export async function uploadFile(
     }
 
     fs.writeFileSync(filePath, buffer);
-    console.log(`✅ Local filesystem upload successful: /uploads/${key}`);
-    return `/uploads/${key}`;
+    console.log(`✅ Local filesystem upload successful: /uploads/${sanitizedKey}`);
+    return `/uploads/${sanitizedKey}`;
   } catch (fsError) {
     console.error("❌ Both MinIO and local filesystem storage failed:", fsError);
     throw new Error("Failed to save uploaded file");

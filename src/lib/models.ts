@@ -34,6 +34,7 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
   declare name: CreationOptional<string | null>;
   declare email: CreationOptional<string | null>;
   declare role: CreationOptional<Role>;
+  declare notificationPrefs: CreationOptional<object | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 }
@@ -63,6 +64,10 @@ User.init(
       type: DataTypes.ENUM(...ROLES),
       allowNull: false,
       defaultValue: "RESIDENT",
+    },
+    notificationPrefs: {
+      type: DataTypes.JSON,
+      allowNull: true,
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
@@ -353,6 +358,8 @@ export class Review extends Model<InferAttributes<Review>, InferCreationAttribut
   declare userId: string;
   declare rating: number;
   declare comment: CreationOptional<string | null>;
+  declare reply: CreationOptional<string | null>;
+  declare replyCreatedAt: CreationOptional<Date | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -383,6 +390,14 @@ Review.init(
     },
     comment: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    reply: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    replyCreatedAt: {
+      type: DataTypes.DATE,
       allowNull: true,
     },
     createdAt: DataTypes.DATE,

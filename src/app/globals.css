@@ -923,6 +923,123 @@ textarea:focus-visible {
   font-weight: 800;
 }
 
+/* ─── Form Interaction & Stepper Utilities ─────────────────────────────────── */
+.floating-label-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.floating-label-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  transition: all 0.2s ease-in-out;
+}
+
+.floating-label-input:focus {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.floating-label-text {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  pointer-events: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.floating-label-input:focus ~ .floating-label-text,
+.floating-label-input:not(:placeholder-shown) ~ .floating-label-text {
+  top: 0;
+  transform: translateY(-50%) scale(0.85);
+  left: 0.75rem;
+  padding: 0 0.25rem;
+  background: var(--app-bg);
+  color: var(--color-brand-primary);
+  font-weight: 600;
+}
+
+/* Success Input Glow Animation */
+.input-success {
+  border-color: var(--color-success) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* Custom progress stepper styling */
+.stepper-container {
+  display: flex;
+  justify-content: justify-between;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.stepper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+}
+
+.stepper-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  background: var(--glass-bg-strong);
+  border: 2px solid var(--glass-border);
+  color: var(--color-text-muted);
+  transition: all 0.3s ease;
+}
+
+.stepper-step.active .stepper-circle {
+  background: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.stepper-step.completed .stepper-circle {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.stepper-line {
+  position: absolute;
+  top: 16px;
+  height: 2px;
+  background: var(--glass-border);
+  z-index: 0;
+  transition: all 0.3s ease;
+}
+
+/* Vendor status indicator pills */
+.status-open {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-closed {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
 /* ─── Print Styles ─────────────────────────────────────────────────────────── */
 @media print {
   nav,
@@ -953,3 +1070,4 @@ textarea:focus-visible {
     padding: 0 !important;
   }
 }
+

@@ -1,7 +1,8 @@
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, rateLimitedProcedure } from "../trpc";
 import { z } from "zod";
 import { Booking, Vendor, User } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
+import { Op } from "sequelize";
 import { createNotification } from "./notifications";
 
 export const bookingRouter = router({
@@ -9,7 +10,7 @@ export const bookingRouter = router({
    * Create a new booking request
    * Implementation: Phase 5
    */
-  create: protectedProcedure
+  create: rateLimitedProcedure("booking:create", 10, 60)
     .input(
       z.object({
         vendorId: z.string(),
@@ -19,9 +20,6 @@ export const bookingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const residentId = ctx.session.userId;
-      if (!residentId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       // Check if vendor exists
       const vendor = await Vendor.findByPk(input.vendorId);
@@ -29,11 +27,33 @@ export const bookingRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Vendor profile not found" });
       }
 
+      // Check if the requested slot overlaps with an already accepted job
+      const slotStart = new Date(input.slotStart);
+      const oneHourBefore = new Date(slotStart.getTime() - 59 * 60 * 1000);
+      const oneHourAfter = new Date(slotStart.getTime() + 59 * 60 * 1000);
+
+      const existingBooking = await Booking.findOne({
+        where: {
+          vendorId: input.vendorId,
+          status: "ACCEPTED",
+          slotStart: {
+            [Op.between]: [oneHourBefore, oneHourAfter],
+          },
+        },
+      });
+
+      if (existingBooking) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This slot is already booked and unavailable. Please choose another time.",
+        });
+      }
+
       // Create booking
       const booking = await Booking.create({
         residentId,
         vendorId: input.vendorId,
-        slotStart: new Date(input.slotStart),
+        slotStart,
         notes: input.notes || null,
         status: "PENDING",
       });
@@ -63,9 +83,6 @@ export const bookingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       const booking = await Booking.findByPk(input.bookingId);
       if (!booking) {
@@ -206,9 +223,6 @@ export const bookingRouter = router({
    */
   listForResident: protectedProcedure.query(async ({ ctx }) => {
     const residentId = ctx.session.userId;
-    if (!residentId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
-    }
 
     const bookings = await Booking.findAll({
       where: { residentId },

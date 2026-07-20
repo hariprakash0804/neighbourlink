@@ -32,10 +32,40 @@ declare module "@auth/core/jwt" {
   }
 }
 
+// ─── Security: Validate AUTH_SECRET at startup ───────────────────────────────
+const authSecret = process.env.AUTH_SECRET;
+if (!authSecret || authSecret.length < 32) {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "❌ FATAL: AUTH_SECRET must be set and at least 32 characters in production. " +
+      "Generate one with: openssl rand -base64 32"
+    );
+  } else {
+    console.warn(
+      "⚠️ AUTH_SECRET is missing or too short. Using a fallback for development. " +
+      "Set a strong AUTH_SECRET in .env.local for production."
+    );
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  secret: authSecret,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-authjs.session-token"
+        : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
   },
   pages: {
     signIn: "/auth/signin",

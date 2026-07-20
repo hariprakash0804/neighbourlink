@@ -1,11 +1,100 @@
 import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { z } from "zod";
-import { EssentialService, User, Vendor } from "@/lib/models";
+import { EssentialService, User, Vendor, VENDOR_CATEGORIES, ESSENTIAL_CATEGORIES } from "@/lib/models";
 import { haversineDistance } from "@/lib/utils";
 import { Op } from "sequelize";
 import { getMeiliClient } from "@/lib/meilisearch";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { TRPCError } from "@trpc/server";
+
+// All valid categories for validation
+const ALL_VALID_CATEGORIES = new Set<string>([
+  ...VENDOR_CATEGORIES,
+  ...ESSENTIAL_CATEGORIES,
+]);
+
+/**
+ * Sanitize a string for safe use inside Meilisearch filter expressions.
+ * Strips characters that could break out of quoted string context.
+ */
+function sanitizeMeiliFilter(value: string): string {
+  return value.replace(/["\\]/g, "");
+}
+
+function filterAndSortVendors(
+  vendors: any[],
+  filters: {
+    minRating?: number;
+    maxPrice?: number;
+    verificationTier?: "UNVERIFIED" | "ID_VERIFIED" | "TOP_RATED";
+    availableNow?: boolean;
+    sortBy: "distance" | "rating" | "price" | "responseTime";
+  }
+) {
+  let result = [...vendors];
+
+  // 1. Min Rating Filter
+  if (filters.minRating !== undefined) {
+    result = result.filter((v) => v.ratingAvg >= filters.minRating!);
+  }
+
+  // 2. Max Price Filter
+  if (filters.maxPrice !== undefined) {
+    result = result.filter((v) => {
+      const price = v.priceInfo as Record<string, any> | null;
+      return price && typeof price.rate === "number" && price.rate <= filters.maxPrice!;
+    });
+  }
+
+  // 3. Verification Tier Filter
+  if (filters.verificationTier !== undefined) {
+    result = result.filter((v) => v.verificationTier === filters.verificationTier);
+  }
+
+  // 4. Available Now Filter
+  if (filters.availableNow) {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    result = result.filter((v) => {
+      const hours = v.workingHours as Record<string, any> | null;
+      if (!hours || !hours.open || !hours.close) return false;
+      const [openH, openM] = hours.open.split(":").map(Number);
+      const [closeH, closeM] = hours.close.split(":").map(Number);
+      const openMin = openH * 60 + (openM || 0);
+      const closeMin = closeH * 60 + (closeM || 0);
+      
+      if (closeMin > openMin) {
+        return currentMinutes >= openMin && currentMinutes <= closeMin;
+      } else {
+        // Wraps midnight
+        return currentMinutes >= openMin || currentMinutes <= closeMin;
+      }
+    });
+  }
+
+  // 5. Sorting
+  if (filters.sortBy === "rating") {
+    result.sort((a, b) => b.ratingAvg - a.ratingAvg || b.ratingCount - a.ratingCount);
+  } else if (filters.sortBy === "price") {
+    result.sort((a, b) => {
+      const rateA = (a.priceInfo as any)?.rate ?? Infinity;
+      const rateB = (b.priceInfo as any)?.rate ?? Infinity;
+      return rateA - rateB;
+    });
+  } else if (filters.sortBy === "responseTime") {
+    result.sort((a, b) => {
+      const timeA = a.responseTimeMin ?? Infinity;
+      const timeB = b.responseTimeMin ?? Infinity;
+      return timeA - timeB;
+    });
+  } else {
+    // Default: distance
+    result.sort((a, b) => a.distance - b.distance);
+  }
+
+  return result;
+}
 
 export const directoryRouter = router({
   /**
@@ -15,7 +104,7 @@ export const directoryRouter = router({
   searchEssentialServices: publicProcedure
     .input(
       z.object({
-        category: z.string(),
+        category: z.string().max(50),
         lat: z.number(),
         lng: z.number(),
         radius: z.number().min(500).max(20000).default(3000), // radius in meters
@@ -75,15 +164,31 @@ export const directoryRouter = router({
   searchVendors: publicProcedure
     .input(
       z.object({
-        category: z.string().optional(),
+        category: z.string().max(50).optional(),
         lat: z.number(),
         lng: z.number(),
         radius: z.number().min(500).max(20000).default(3000),
-        query: z.string().optional(),
+        query: z.string().max(200).optional(),
+        sortBy: z.enum(["distance", "rating", "price", "responseTime"]).default("distance"),
+        minRating: z.number().min(1).max(5).optional(),
+        maxPrice: z.number().min(0).optional(),
+        verificationTier: z.enum(["UNVERIFIED", "ID_VERIFIED", "TOP_RATED"]).optional(),
+        availableNow: z.boolean().optional(),
       })
     )
     .query(async ({ input }) => {
-      const { category, lat, lng, radius, query = "" } = input;
+      const {
+        category,
+        lat,
+        lng,
+        radius,
+        query = "",
+        sortBy,
+        minRating,
+        maxPrice,
+        verificationTier,
+        availableNow,
+      } = input;
       const meili = getMeiliClient();
 
       if (meili) {
@@ -94,7 +199,14 @@ export const directoryRouter = router({
           // Filter within geo radius: _geoRadius(lat, lng, radiusInMeters)
           const filterParts = [`_geoRadius(${lat}, ${lng}, ${radius})`];
           if (category) {
-            filterParts.push(`category = "${category}"`);
+            // Validate category against known enums to prevent filter injection
+            if (!ALL_VALID_CATEGORIES.has(category)) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Invalid category: ${category}`,
+              });
+            }
+            filterParts.push(`category = "${sanitizeMeiliFilter(category)}"`);
           }
 
           // Search Meilisearch
@@ -140,9 +252,18 @@ export const directoryRouter = router({
             })
             .filter((v): v is NonNullable<typeof v> => v !== null);
 
+          // Apply filters and custom sorting
+          const processedVendors = filterAndSortVendors(vendors, {
+            sortBy,
+            minRating,
+            maxPrice,
+            verificationTier,
+            availableNow,
+          });
+
           return {
-            vendors,
-            total: vendors.length,
+            vendors: processedVendors,
+            total: processedVendors.length,
             provider: "meilisearch",
           };
         } catch (meiliError) {
@@ -171,9 +292,11 @@ export const directoryRouter = router({
       }
 
       if (query.trim()) {
+        // Escape SQL LIKE wildcards in user input
+        const sanitizedQuery = query.replace(/[%_]/g, "\\$&");
         whereClause[Op.or] = [
-          { businessName: { [Op.like]: `%${query}%` } },
-          { description: { [Op.like]: `%${query}%` } },
+          { businessName: { [Op.like]: `%${sanitizedQuery}%` } },
+          { description: { [Op.like]: `%${sanitizedQuery}%` } },
         ];
       }
 
@@ -204,12 +327,20 @@ export const directoryRouter = router({
             distance,
           };
         })
-        .filter((v) => v.distance <= radius)
-        .sort((a, b) => a.distance - b.distance);
+        .filter((v) => v.distance <= radius);
+
+      // Apply filters and custom sorting
+      const processedVendors = filterAndSortVendors(vendorsWithDistance, {
+        sortBy,
+        minRating,
+        maxPrice,
+        verificationTier,
+        availableNow,
+      });
 
       return {
-        vendors: vendorsWithDistance,
-        total: vendorsWithDistance.length,
+        vendors: processedVendors,
+        total: processedVendors.length,
         provider: "database",
       };
     }),

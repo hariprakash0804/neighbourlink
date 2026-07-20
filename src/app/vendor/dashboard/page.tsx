@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -220,7 +221,7 @@ export default function VendorDashboardPage() {
   return (
     <div className="min-h-screen bg-surface-primary text-text-primary px-4 md:px-8 py-10 max-w-5xl mx-auto space-y-8">
       {/* Dashboard Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-12">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mt-12">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs font-semibold text-brand-primary uppercase tracking-wider">
             <Sparkles className="h-4 w-4" />
@@ -253,6 +254,15 @@ export default function VendorDashboardPage() {
               ownProfile?.description || "Manage incoming neighborhood service bookings, view customer details, and update job status."
             )}
           </p>
+        </div>
+        <div className="shrink-0 flex gap-2">
+          <Link
+            href="/vendor/dashboard/analytics"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-primary to-brand-accent px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:brightness-110 active:scale-98 transition-all"
+          >
+            <TrendingUp className="h-4 w-4" />
+            <span>View Analytics</span>
+          </Link>
         </div>
       </div>
 

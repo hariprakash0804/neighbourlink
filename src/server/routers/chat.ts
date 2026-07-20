@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, rateLimitedProcedure } from "../trpc";
 import { z } from "zod";
 import { ChatMessage, User, Vendor } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
@@ -11,7 +11,7 @@ export const chatRouter = router({
    * Send a chat message (persists message in database)
    * Implementation: Phase 5
    */
-  sendMessage: protectedProcedure
+  sendMessage: rateLimitedProcedure("chat:send", 30, 60)
     .input(
       z.object({
         recipientId: z.string(),
@@ -20,9 +20,6 @@ export const chatRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const senderId = ctx.session.userId;
-      if (!senderId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       if (senderId === input.recipientId) {
         throw new TRPCError({
@@ -77,9 +74,6 @@ export const chatRouter = router({
     .input(z.object({ recipientId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       const messages = await ChatMessage.findAll({
         where: {
@@ -109,9 +103,6 @@ export const chatRouter = router({
    */
   listConversations: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.userId;
-    if (!userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
-    }
 
     // Find all messages involving user
     const messages = await ChatMessage.findAll({
@@ -186,9 +177,6 @@ export const chatRouter = router({
     .input(z.object({ senderId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       await ChatMessage.update(
         { readAt: new Date() },

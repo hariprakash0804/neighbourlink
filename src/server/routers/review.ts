@@ -1,4 +1,4 @@
-import { router, protectedProcedure, publicProcedure } from "../trpc";
+import { router, protectedProcedure, publicProcedure, rateLimitedProcedure } from "../trpc";
 import { z } from "zod";
 import { Review, Vendor, User } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
@@ -11,7 +11,7 @@ export const reviewRouter = router({
    * Create a review for a vendor
    * Implementation: Phase 6
    */
-  create: protectedProcedure
+  create: rateLimitedProcedure("review:create", 5, 3600)
     .input(
       z.object({
         vendorId: z.string(),
@@ -21,9 +21,6 @@ export const reviewRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       // 1. Validate vendor exists
       const vendor = await Vendor.findByPk(input.vendorId);
@@ -135,6 +132,8 @@ export const reviewRouter = router({
           userId: r.userId,
           rating: r.rating,
           comment: r.comment,
+          reply: r.reply,
+          replyCreatedAt: r.replyCreatedAt ? r.replyCreatedAt.toISOString() : null,
           createdAt: r.createdAt.toISOString(),
           userName: r.user?.name || "Anonymous",
         })),
@@ -142,5 +141,64 @@ export const reviewRouter = router({
         page,
         totalPages: Math.ceil(count / limit),
       };
+    }),
+
+  /**
+   * Reply to a review (for vendors replying to their reviews)
+   */
+  reply: rateLimitedProcedure("review:reply", 10, 3600)
+    .input(
+      z.object({
+        reviewId: z.string(),
+        reply: z.string().min(1).max(2000),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+
+      // 1. Fetch review
+      const review = await Review.findByPk(input.reviewId, {
+        include: [{ model: Vendor, as: "vendor" }],
+      });
+      if (!review) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Review not found.",
+        });
+      }
+
+      // 2. Verify that the current user owns the vendor profile
+      const vendor = review.vendor;
+      if (!vendor || vendor.userId !== userId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only reply to reviews written for your own business.",
+        });
+      }
+
+      // 3. Content moderation: Profanity/Spam filter
+      if (containsProfanityOrSpam(input.reply)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Your reply was flagged by our safety filters for containing inappropriate content or spam.",
+        });
+      }
+
+      // 4. Update the review with vendor reply
+      await review.update({
+        reply: input.reply,
+        replyCreatedAt: new Date(),
+      });
+
+      // 5. Notify the resident who wrote the review
+      await createNotification({
+        userId: review.userId,
+        type: "SYSTEM_ALERT",
+        title: "Vendor Replied to Your Review",
+        body: `${vendor.businessName} has responded to your review.`,
+        metadata: { reviewId: review.id, vendorId: vendor.id },
+      });
+
+      return { success: true };
     }),
 });

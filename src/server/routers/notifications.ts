@@ -1,7 +1,8 @@
 import { router, protectedProcedure } from "../trpc";
 import { z } from "zod";
-import { Notification } from "@/lib/models";
+import { Notification, User } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
+import { sendNotificationEmail } from "@/lib/email";
 
 export const notificationsRouter = router({
   /**
@@ -77,9 +78,6 @@ export const notificationsRouter = router({
       return { success: true };
     }),
 
-  /**
-   * Mark all notifications as read
-   */
   markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.userId;
     if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -91,6 +89,44 @@ export const notificationsRouter = router({
 
     return { success: true };
   }),
+
+  /**
+   * Get notification preferences
+   */
+  getPrefs: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.userId;
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+    }
+
+    const defaultPrefs = { email: true, push: false, digest: "daily" };
+    return {
+      prefs: user.notificationPrefs
+        ? { ...defaultPrefs, ...(user.notificationPrefs as any) }
+        : defaultPrefs,
+    };
+  }),
+
+  /**
+   * Update notification preferences
+   */
+  updatePrefs: protectedProcedure
+    .input(
+      z.object({
+        email: z.boolean(),
+        push: z.boolean(),
+        digest: z.enum(["none", "daily", "weekly"]),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      await User.update(
+        { notificationPrefs: input },
+        { where: { id: userId } }
+      );
+      return { success: true };
+    }),
 });
 
 // ─── Helper: Create Notification ──────────────────────────────────────────────
@@ -106,6 +142,7 @@ export async function createNotification(params: {
   metadata?: object;
 }) {
   try {
+    // 1. Persist notification in database
     await Notification.create({
       userId: params.userId,
       type: params.type as any,
@@ -114,6 +151,20 @@ export async function createNotification(params: {
       metadata: params.metadata || null,
       read: false,
     });
+
+    // 2. Fetch User & send email if configured
+    const user = await User.findByPk(params.userId);
+    if (user && user.email) {
+      const prefs = user.notificationPrefs as any;
+      const emailEnabled = prefs ? prefs.email !== false : true; // default true
+
+      if (emailEnabled) {
+        // Run in background asynchronously (don't block the caller request)
+        sendNotificationEmail(user.email, params.title, params.body).catch((emailErr) => {
+          console.error("⚠️ Failed to send notification email:", emailErr);
+        });
+      }
+    }
   } catch (err) {
     console.error("⚠️ Failed to create notification:", err);
   }

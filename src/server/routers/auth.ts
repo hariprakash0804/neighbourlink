@@ -49,9 +49,6 @@ export const authRouter = router({
   getProfile: protectedProcedure
     .query(async ({ ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       const user = await User.findByPk(userId);
       if (!user) {
@@ -80,9 +77,6 @@ export const authRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       const updates: any = { name: input.name };
       if (input.email !== undefined) {

@@ -2,6 +2,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { auth } from "@/auth";
 import sequelize, { ensureDbSync } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * Context — available in every tRPC procedure
@@ -91,3 +92,38 @@ export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
     },
   });
 });
+
+/**
+ * Rate-limited protected procedure factory.
+ *
+ * Creates a procedure that requires authentication AND enforces per-user
+ * rate limiting using the Redis-backed rate limiter.
+ *
+ * @param keyPrefix - Unique prefix for the rate limit key (e.g., "chat:send")
+ * @param limit - Max requests allowed in the window
+ * @param windowSecs - Time window in seconds
+ *
+ * @example
+ * ```ts
+ * // Max 30 messages per minute per user
+ * rateLimitedProcedure("chat:send", 30, 60)
+ *   .input(z.object({ ... }))
+ *   .mutation(async ({ input, ctx }) => { ... });
+ * ```
+ */
+export function rateLimitedProcedure(keyPrefix: string, limit: number, windowSecs: number) {
+  return protectedProcedure.use(async ({ ctx, next }) => {
+    const rateLimitKey = `rate:${keyPrefix}:${ctx.session.userId}`;
+    const result = await checkRateLimit(rateLimitKey, limit, windowSecs);
+
+    if (!result.allowed) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: `Rate limit exceeded. Please wait before trying again. (${result.remaining} remaining)`,
+      });
+    }
+
+    return next({ ctx });
+  });
+}
+

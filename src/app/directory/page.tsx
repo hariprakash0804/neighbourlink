@@ -30,6 +30,8 @@ import { Map } from "@/components/map/Map";
 import { useSession } from "next-auth/react";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useToast } from "@/components/providers/ToastProvider";
+import { VendorCard } from "@/components/ui/VendorCard";
+
 
 function DirectoryContent() {
   const router = useRouter();
@@ -588,205 +590,17 @@ function DirectoryContent() {
 
               {/* ─── VENDOR CARDS ─── */}
               {!isEssential &&
-                vendors.map((item) => {
-                  const price = item.priceInfo as Record<string, any> | null;
-                  const hours = item.workingHours as Record<string, any> | null;
-
-                  return (
-                    <motion.div
-                      key={item.id}
-                      variants={{
-                        hidden: { opacity: 0, y: 15 },
-                        visible: { opacity: 1, y: 0 },
-                      }}
-                      className="clay-card card-spotlight p-5 flex flex-col justify-between h-full group"
-                    >
-                      <div className="space-y-2.5">
-                        {/* Header: Business name + verification badge */}
-                        <div className="flex items-start justify-between gap-2">
-                          <h3
-                            className="text-sm font-bold text-text-primary group-hover:text-brand-primary transition-colors line-clamp-2"
-                            style={{ fontFamily: "var(--font-heading)" }}
-                          >
-                            {item.businessName}
-                          </h3>
-
-                          {/* Verification tiers */}
-                          {item.verificationTier === "TOP_RATED" ? (
-                            <span className="flex items-center gap-0.5 rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-bold text-warning border border-warning/20 animate-shimmer select-none shrink-0">
-                              <Star className="h-2.5 w-2.5 fill-warning text-warning" />
-                              <span>Top Rated</span>
-                            </span>
-                          ) : item.verificationTier === "ID_VERIFIED" ? (
-                            <span className="flex items-center gap-0.5 rounded-full bg-verified-blue/10 px-2 py-0.5 text-[10px] font-bold text-verified-blue shrink-0">
-                              <CheckCircle className="h-2.5 w-2.5" />
-                              <span>ID Verified</span>
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-0.5 rounded-full bg-text-muted/10 px-2 py-0.5 text-[10px] font-semibold text-text-muted shrink-0">
-                              <ShieldAlert className="h-2.5 w-2.5" />
-                              <span>Unverified</span>
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Distance & rating summary */}
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
-                          <span className="flex items-center gap-1 font-medium">
-                            <MapPin className="h-3.5 w-3.5 text-brand-primary" />
-                            <span>{formatDistance(item.distance)}</span>
-                          </span>
-
-                          {item.ratingCount > 0 ? (
-                            <span className="flex items-center gap-0.5 text-warning font-semibold">
-                              <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                              <span>{item.ratingAvg}</span>
-                              <span className="text-[10px] text-text-muted">
-                                ({item.ratingCount})
-                              </span>
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-text-muted">No reviews</span>
-                          )}
-                        </div>
-
-                        {/* Description */}
-                        {item.description && (
-                          <p className="text-xs text-text-secondary line-clamp-2">
-                            {item.description}
-                          </p>
-                        )}
-
-                        {/* Timing / Price Box */}
-                        <div className="text-xs text-text-secondary bg-surface-tertiary p-2.5 rounded-xl space-y-1.5">
-                          {price && (
-                            <div className="flex justify-between">
-                              <span className="text-text-muted">Price</span>
-                              <span className="font-bold text-text-primary">
-                                ₹{price.rate} / {price.unit}
-                              </span>
-                            </div>
-                          )}
-
-                          {hours && (
-                            <div className="flex justify-between">
-                              <span className="text-text-muted">Hours</span>
-                              <span className="font-semibold text-text-primary flex items-center gap-1">
-                                <Clock className="h-3 w-3 text-text-muted" />
-                                <span>
-                                  {hours.open} - {hours.close}
-                                </span>
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Open/Closed live indicator */}
-                          {hours && (() => {
-                            const openStatus = isOpenNow(hours);
-                            if (openStatus === null) return null;
-                            return (
-                              <div className="flex justify-between">
-                                <span className="text-text-muted">Status</span>
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  openStatus ? "status-open" : "status-closed"
-                                }`}>
-                                  <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1 ${openStatus ? "bg-success animate-pulse" : "bg-danger"}`} />
-                                  {openStatus ? "Open Now" : "Closed"}
-                                </span>
-                              </div>
-                            );
-                          })()}
-
-                          {item.responseTimeMin && (
-                            <div className="flex justify-between">
-                              <span className="text-text-muted">Replies in</span>
-                              <span className="font-medium text-success">
-                                ~{item.responseTimeMin} mins
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Quick actions: Favorite + Share */}
-                      <div className="flex items-center gap-1.5 mt-3">
-                        <button
-                          onClick={() => handleToggleFavorite(item.id)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg glass hover:bg-white/10 transition-all"
-                          aria-label={favoriteIds.has(item.id) ? "Remove from favorites" : "Add to favorites"}
-                        >
-                          <Heart className={cn("h-3.5 w-3.5", favoriteIds.has(item.id) ? "fill-danger text-danger" : "text-text-muted")} />
-                        </button>
-                        <button
-                          onClick={() => handleShare(item.businessName, item.id)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg glass hover:bg-white/10 transition-all"
-                          aria-label="Share vendor"
-                        >
-                          <Share2 className="h-3.5 w-3.5 text-text-muted" />
-                        </button>
-                      </div>
-
-                      {/* Actions: Call, WhatsApp, Book, Chat */}
-                      <div className="mt-3 pt-3.5 border-t border-white/5 space-y-2">
-                        {item.phone ? (
-                          <div className="flex gap-2">
-                            <a
-                              href={telLink(item.phone)}
-                              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 glass py-2 text-xs font-bold text-text-primary hover:bg-white/5 transition-all select-none"
-                            >
-                              <Phone className="h-3.5 w-3.5 text-success" />
-                              <span>Call</span>
-                            </a>
-                            <a
-                              href={whatsappLink(
-                                item.phone,
-                                `Hello ${item.businessName}, I found you on NeighborLink and would like to book a service!`
-                              )}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 glass py-2 text-xs font-bold text-text-primary hover:bg-white/5 transition-all select-none"
-                            >
-                              <MessageSquare className="h-3.5 w-3.5 text-success fill-success/10" />
-                              <span>WhatsApp</span>
-                            </a>
-                          </div>
-                        ) : null}
-                        
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleBookClick(item)}
-                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-brand-primary to-brand-accent py-2 text-xs font-bold text-white hover:brightness-110 shadow-md transition-all select-none"
-                          >
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>Book Slot</span>
-                          </button>
-                          <button
-                            onClick={() => handleChatClick(item.userId)}
-                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-brand-primary/30 bg-brand-primary/5 py-2 text-xs font-bold text-brand-primary hover:bg-brand-primary/10 transition-all select-none"
-                          >
-                            <MessageSquare className="h-3.5 w-3.5" />
-                            <span>Chat</span>
-                          </button>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => router.push(`/vendor/${item.id}`)}
-                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/5 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all select-none"
-                          >
-                            View Profile →
-                          </button>
-                          <button
-                            onClick={() => router.push(`/compare?ids=${item.id}`)}
-                            className="flex items-center justify-center gap-1 rounded-xl border border-white/5 px-3 py-1.5 text-[11px] font-medium text-text-secondary hover:text-brand-primary hover:bg-white/5 transition-all select-none"
-                          >
-                            <Scale className="h-3 w-3" />
-                            Compare
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                vendors.map((item) => (
+                  <VendorCard
+                    key={item.id}
+                    item={item}
+                    isFavorite={favoriteIds.has(item.id)}
+                    onToggleFavorite={handleToggleFavorite}
+                    onShare={handleShare}
+                    onBookClick={handleBookClick}
+                    onChatClick={handleChatClick}
+                  />
+                ))}
             </motion.div>
           )}
         </div>
