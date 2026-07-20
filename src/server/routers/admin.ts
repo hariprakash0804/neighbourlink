@@ -62,10 +62,6 @@ export const adminRouter = router({
     .input(z.object({ vendorId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const actorId = ctx.session.userId;
-      if (!actorId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
       const vendor = await Vendor.findByPk(input.vendorId);
       if (!vendor) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Vendor profile not found" });
@@ -132,10 +128,6 @@ export const adminRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const actorId = ctx.session.userId;
-      if (!actorId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
       const vendor = await Vendor.findByPk(input.vendorId);
       if (!vendor) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Vendor profile not found" });
