@@ -47,7 +47,7 @@ export const ESSENTIAL_CATEGORY_META: CategoryMeta[] = [
 export const VENDOR_CATEGORY_META: CategoryMeta[] = [
   { value: "NEWSPAPER",  label: "Newspaper",            icon: Newspaper,       description: "Daily newspaper delivery",                      color: "#78716c" },
   { value: "CABLE_DTH",  label: "Cable TV / DTH",       icon: Tv,              description: "Cable TV and DTH operators",                    color: "#7c3aed" },
-  { value: "MILK",       label: "Milk Delivery",         icon: Milk,            description: "Daily milk and dairy delivery",                 color: "#f5f5f4" },
+  { value: "MILK",       label: "Milk Delivery",         icon: Milk,            description: "Daily milk and dairy delivery",                 color: "#38bdf8" },
   { value: "LPG_GAS",   label: "LPG Gas",               icon: Fuel,            description: "LPG gas agency and refill booking",             color: "#ea580c" },
   { value: "WATER_CAN",  label: "Water Can",            icon: Droplets,        description: "Water can supplier and delivery",               color: "#0ea5e9" },
   { value: "ELECTRICIAN", label: "Electrician",          icon: Zap,             description: "Electrical repair and installation",            color: "#eab308" },

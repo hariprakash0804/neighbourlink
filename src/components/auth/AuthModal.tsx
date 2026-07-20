@@ -124,6 +124,9 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           setTimeout(() => {
             onSuccess?.();
             onClose();
+            if (role === "VENDOR") {
+              window.location.href = "/vendor/register";
+            }
           }, 1500);
         }
       }

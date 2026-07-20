@@ -22,6 +22,8 @@ import {
   ChevronRight,
   AlertTriangle,
   Trash2,
+  Building2,
+  Briefcase,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { AuthModal } from "@/components/auth/AuthModal";
@@ -62,6 +64,81 @@ export default function ProfilePage() {
       await refetchAddresses();
     },
   });
+
+  // Vendor states
+  const [businessName, setBusinessName] = useState("");
+  const [description, setDescription] = useState("");
+  const [priceRate, setPriceRate] = useState<number>(250);
+  const [priceUnit, setPriceUnit] = useState("hour");
+  const [priceDetails, setPriceDetails] = useState("");
+  const [openTime, setOpenTime] = useState("09:00 AM");
+  const [closeTime, setCloseTime] = useState("08:00 PM");
+  const [vendorSaveSuccess, setVendorSaveSuccess] = useState(false);
+  const [vendorError, setVendorError] = useState("");
+
+  // Vendor queries & mutations
+  const { data: vendorProfile, isLoading: isVendorLoading, refetch: refetchVendor } = trpc.vendor.getOwnProfile.useQuery(undefined, {
+    enabled: status === "authenticated" && profile?.role === "VENDOR",
+    retry: false,
+  });
+
+  const updateVendorMutation = trpc.vendor.updateProfile.useMutation({
+    onSuccess: async () => {
+      setVendorSaveSuccess(true);
+      await refetchVendor();
+      setTimeout(() => setVendorSaveSuccess(false), 2500);
+    },
+  });
+
+  // Prepopulate vendor fields
+  useEffect(() => {
+    if (vendorProfile) {
+      setBusinessName(vendorProfile.businessName || "");
+      setDescription(vendorProfile.description || "");
+      if (vendorProfile.priceInfo) {
+        const pi = vendorProfile.priceInfo as any;
+        setPriceRate(pi.rate || 0);
+        setPriceUnit(pi.unit || "hour");
+        setPriceDetails(pi.details || "");
+      }
+      if (vendorProfile.workingHours) {
+        const wh = vendorProfile.workingHours as any;
+        setOpenTime(wh.open || "09:00 AM");
+        setCloseTime(wh.close || "08:00 PM");
+      }
+    }
+  }, [vendorProfile]);
+
+  const handleVendorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVendorError("");
+
+    if (!vendorProfile?.id) return;
+
+    if (businessName.trim().length < 2) {
+      setVendorError("Business Name must be at least 2 characters long.");
+      return;
+    }
+
+    try {
+      await updateVendorMutation.mutateAsync({
+        vendorId: vendorProfile.id,
+        businessName: businessName.trim(),
+        description: description.trim() || undefined,
+        priceInfo: {
+          rate: Number(priceRate),
+          unit: priceUnit,
+          details: priceDetails.trim(),
+        },
+        workingHours: {
+          open: openTime.trim(),
+          close: closeTime.trim(),
+        },
+      });
+    } catch (err: any) {
+      setVendorError(err.message || "Failed to update business profile.");
+    }
+  };
 
   // Prepopulate form fields
   useEffect(() => {
@@ -383,6 +460,203 @@ export default function ProfilePage() {
             </motion.div>
           )}
         </motion.div>
+
+        {/* Vendor Business Settings Card */}
+        {profile?.role === "VENDOR" && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.33 }}
+            className="clay-card p-6 md:p-8 space-y-6"
+          >
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                <Building2 className="h-4.5 w-4.5 text-brand-primary" />
+                Business Settings
+              </h3>
+              {vendorProfile && (
+                <span className="text-[10px] uppercase font-black tracking-wider text-success bg-success/10 px-2.5 py-0.5 rounded-full border border-success/20">
+                  {vendorProfile.verificationTier}
+                </span>
+              )}
+            </div>
+
+            {isVendorLoading ? (
+              <div className="flex justify-center py-6">
+                <span className="animate-spin h-6 w-6 border-2 border-brand-primary border-t-transparent rounded-full" />
+              </div>
+            ) : !vendorProfile ? (
+              <div className="text-center py-6 space-y-4">
+                <p className="text-xs text-text-secondary">
+                  You haven't set up your vendor business details yet. Set up your business profile to start receiving bookings and notifications.
+                </p>
+                <button
+                  onClick={() => router.push("/vendor/register")}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-brand-primary px-5 py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-[0.98] transition-all"
+                >
+                  <span>Complete Business Setup</span>
+                  <ChevronRight className="h-4.5 w-4.5" />
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleVendorSubmit} className="space-y-4">
+                {/* Business Name */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Business Name</label>
+                  <div className="relative">
+                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-primary" />
+                    <input
+                      type="text"
+                      required
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      placeholder="Enter business name..."
+                      className="w-full rounded-2xl bg-white/5 border border-white/10 py-3 pl-12 pr-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:border-brand-primary/50 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Business Category (Read-only) */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Service Category (Domain)</label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+                    <input
+                      type="text"
+                      disabled
+                      value={vendorProfile.category}
+                      className="w-full rounded-2xl bg-white/5 border border-white/5 py-3 pl-12 pr-4 text-sm text-text-muted cursor-not-allowed uppercase"
+                    />
+                  </div>
+                </div>
+
+                {/* Business Description */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Business Description</label>
+                  <textarea
+                    rows={3}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe your services..."
+                    className="w-full rounded-2xl bg-white/5 border border-white/10 p-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:border-brand-primary/50 transition-all resize-none"
+                  />
+                </div>
+
+                {/* Pricing Rates */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Base Rate (₹)</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={priceRate}
+                      onChange={(e) => setPriceRate(Number(e.target.value))}
+                      className="w-full rounded-2xl bg-white/5 border border-white/10 py-3 px-4 text-sm text-text-primary focus:outline-none focus:border-brand-primary/50 transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Pricing Unit</label>
+                    <select
+                      value={priceUnit}
+                      onChange={(e) => setPriceUnit(e.target.value)}
+                      className="w-full rounded-2xl bg-white/5 border border-white/10 py-3.5 px-4 text-sm text-text-primary bg-surface-secondary focus:outline-none focus:border-brand-primary/50 transition-all"
+                    >
+                      <option value="hour">per Hour</option>
+                      <option value="day">per Day</option>
+                      <option value="month">per Month</option>
+                      <option value="service">per Service</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Pricing Details */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Rate Details (Optional)</label>
+                  <input
+                    type="text"
+                    value={priceDetails}
+                    onChange={(e) => setPriceDetails(e.target.value)}
+                    placeholder="e.g. includes blue milk packet daily"
+                    className="w-full rounded-2xl bg-white/5 border border-white/10 py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:border-brand-primary/50 transition-all"
+                  />
+                </div>
+
+                {/* Working Hours */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Opening Time</label>
+                    <div className="relative">
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-primary" />
+                      <input
+                        type="text"
+                        required
+                        value={openTime}
+                        onChange={(e) => setOpenTime(e.target.value)}
+                        placeholder="09:00 AM"
+                        className="w-full rounded-2xl bg-white/5 border border-white/10 py-3 pl-12 pr-4 text-sm text-text-primary focus:outline-none focus:border-brand-primary/50 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-text-secondary/60 uppercase font-black block">Closing Time</label>
+                    <div className="relative">
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-primary" />
+                      <input
+                        type="text"
+                        required
+                        value={closeTime}
+                        onChange={(e) => setCloseTime(e.target.value)}
+                        placeholder="08:00 PM"
+                        className="w-full rounded-2xl bg-white/5 border border-white/10 py-3 pl-12 pr-4 text-sm text-text-primary focus:outline-none focus:border-brand-primary/50 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {vendorError && (
+                  <p className="text-xs text-red-400 font-medium">{vendorError}</p>
+                )}
+
+                {updateVendorMutation.error && (
+                  <p className="text-xs text-red-400 font-medium">
+                    {updateVendorMutation.error.message}
+                  </p>
+                )}
+
+                {/* Submit Button */}
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={updateVendorMutation.isPending}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-2xl bg-brand-primary py-3.5 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-[0.98] transition-all"
+                  >
+                    {updateVendorMutation.isPending ? (
+                      <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        <span>Save Business Changes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Success Dialog */}
+            {vendorSaveSuccess && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 bg-success/10 border border-success/20 text-success text-xs font-semibold px-4 py-3 rounded-2xl"
+              >
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                <span>Business details updated successfully!</span>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
 
         {/* Saved Locations */}
         <motion.div
