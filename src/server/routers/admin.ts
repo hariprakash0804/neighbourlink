@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Vendor, User, AuditLog } from "@/lib/models";
 import { indexVendors } from "@/lib/meilisearch";
 import { TRPCError } from "@trpc/server";
+import { createNotification } from "./notifications";
 
 export const adminRouter = router({
   /**
@@ -83,6 +84,14 @@ export const adminRouter = router({
         metadata: { businessName: vendor.businessName } as any,
       });
 
+      // Notify vendor about approval (triggers email outbox)
+      await createNotification({
+        userId: vendor.userId,
+        type: "VERIFICATION_UPDATE",
+        title: "Verification Approved! 🎉",
+        body: `Great news! Your business profile for "${vendor.businessName}" has been approved by our admin team. You are now recognized as an ID_VERIFIED vendor!`,
+      });
+
       // Sync verified vendor to Meilisearch index
       try {
         const updatedVendor = await Vendor.findByPk(input.vendorId);
@@ -143,6 +152,14 @@ export const adminRouter = router({
         action: "REJECT_VENDOR",
         targetId: input.vendorId,
         metadata: { businessName: vendor.businessName, reason: input.reason } as any,
+      });
+
+      // Notify vendor about rejection (triggers email outbox)
+      await createNotification({
+        userId: vendor.userId,
+        type: "VERIFICATION_UPDATE",
+        title: "Verification Request Rejected ⚠️",
+        body: `Your verification request for "${vendor.businessName}" was rejected by our admin team. Reason: "${input.reason}". Please review your documents and re-upload.`,
       });
 
       return { success: true };

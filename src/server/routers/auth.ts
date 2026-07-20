@@ -3,6 +3,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { User } from "@/lib/models";
 import { hashPassword } from "@/lib/auth-crypto";
+import { createNotification } from "./notifications";
 
 export const authRouter = router({
   /**
@@ -45,6 +46,14 @@ export const authRouter = router({
         name: input.name,
         passwordHash,
         role: input.role,
+      });
+
+      // Send welcome notification (triggers email outbox)
+      await createNotification({
+        userId: user.id,
+        type: "WELCOME",
+        title: "Welcome to NeighborLink! 🎉",
+        body: `Hi ${user.name || "there"}, thank you for signing up on NeighborLink! We're glad to have you in our community.`,
       });
 
       return {

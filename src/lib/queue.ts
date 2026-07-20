@@ -12,6 +12,7 @@ import { Queue, Worker, type Job } from "bullmq";
 import { getRedisClient, isRedisReady } from "./redis";
 import { Review, Vendor, AuditLog } from "./models";
 import sequelize from "./db";
+import { createNotification } from "@/server/routers/notifications";
 
 const QUEUE_NAME = "review-jobs";
 
@@ -128,6 +129,14 @@ async function processCheckBadgeTier(vendorId: string): Promise<void> {
         ratingAvg: vendor.ratingAvg,
         ratingCount: vendor.ratingCount,
       } as any,
+    });
+
+    // Notify vendor about promotion (triggers email outbox)
+    await createNotification({
+      userId: vendor.userId,
+      type: "VERIFICATION_UPDATE",
+      title: "Promoted to Top Rated! 🏆",
+      body: `Congratulations! Based on your excellent client ratings (${vendor.ratingAvg}★ across ${vendor.ratingCount} reviews), you have been promoted to TOP_RATED!`,
     });
 
     console.log(`🏆 Vendor ${vendorId} promoted to TOP_RATED!`);

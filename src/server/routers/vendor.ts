@@ -6,6 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { indexVendors } from "@/lib/meilisearch";
 import { containsProfanityOrSpam } from "@/lib/moderation";
 import { getCache, setCache, CACHE_TTLS, invalidateVendorCache, invalidateSearchCache } from "@/lib/cache";
+import { createNotification } from "./notifications";
 
 // Allowed file types for vendor document uploads
 const ALLOWED_FILE_TYPES = new Set([
@@ -94,6 +95,15 @@ export const vendorRouter = router({
       });
 
       await invalidateSearchCache();
+
+      // Notify user about business profile activation
+      await createNotification({
+        userId,
+        type: "VENDOR_WELCOME",
+        title: "Business Profile Registered! 💼",
+        body: `Congratulations! Your business profile for "${input.businessName}" has been successfully created. You can now configure your schedule, view bookings, and reply to customer reviews.`,
+      });
+
       return { success: true, vendorId: vendor.id };
     }),
 
@@ -154,6 +164,15 @@ export const vendorRouter = router({
       await Vendor.update({ idDocumentUrl: documentUrl }, { where: { id: input.vendorId } });
 
       await invalidateVendorCache(input.vendorId, userId);
+
+      // Notify about upload success
+      await createNotification({
+        userId,
+        type: "VERIFICATION_UPDATE",
+        title: "Verification Document Uploaded 📄",
+        body: `Your identity/business verification document has been uploaded successfully and is currently pending review by the admin team. We will notify you once verified!`,
+      });
+
       return { success: true, documentUrl };
     }),
 

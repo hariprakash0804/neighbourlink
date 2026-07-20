@@ -58,12 +58,21 @@ export const bookingRouter = router({
         status: "PENDING",
       });
 
-      // Notify the vendor about the new booking
+      // Notify the vendor about the new booking (triggers email outbox)
       await createNotification({
         userId: vendor.userId,
         type: "BOOKING_UPDATE",
-        title: "New Booking Request",
+        title: "New Booking Request 📅",
         body: `A resident has requested a booking for ${new Date(input.slotStart).toLocaleDateString("en-IN", { dateStyle: "medium" })}.`,
+        metadata: { bookingId: booking.id, vendorId: input.vendorId },
+      });
+
+      // Notify the resident confirming we received the request (triggers email outbox)
+      await createNotification({
+        userId: residentId,
+        type: "BOOKING_UPDATE",
+        title: "Booking Request Sent 📅",
+        body: `Your service booking request for "${vendor.businessName}" has been submitted successfully for ${new Date(input.slotStart).toLocaleDateString("en-IN", { dateStyle: "medium" })}.`,
         metadata: { bookingId: booking.id, vendorId: input.vendorId },
       });
 
@@ -130,23 +139,40 @@ export const bookingRouter = router({
         CANCELLED: "A booking has been cancelled.",
       };
 
-      // Notify the resident for vendor actions, notify vendor for resident actions
-      if (input.status === "ACCEPTED" || input.status === "DECLINED" || input.status === "COMPLETED") {
+      // Notify the resident for vendor actions (accept/decline)
+      if (input.status === "ACCEPTED" || input.status === "DECLINED") {
         await createNotification({
           userId: booking.residentId,
           type: "BOOKING_UPDATE",
-          title: `Booking ${input.status.charAt(0) + input.status.slice(1).toLowerCase()}`,
+          title: `Booking ${input.status.charAt(0) + input.status.slice(1).toLowerCase()} 📅`,
           body: statusMessages[input.status],
           metadata: { bookingId: booking.id },
         });
       } else if (input.status === "CANCELLED") {
+        // Notify the vendor when cancelled by the resident
         const vendor = await Vendor.findByPk(booking.vendorId);
-        if (vendor) {
+        if (vendor && vendor.userId !== userId) {
           await createNotification({
             userId: vendor.userId,
             type: "BOOKING_UPDATE",
-            title: "Booking Cancelled",
-            body: statusMessages[input.status],
+            title: "Booking Cancelled ❌",
+            body: `Your booking has been cancelled by the resident.`,
+            metadata: { bookingId: booking.id },
+          });
+        }
+      } else if (input.status === "COMPLETED") {
+        // Notify the other party when marked completed
+        const vendor = await Vendor.findByPk(booking.vendorId);
+        if (vendor) {
+          const isVendorActor = vendor.userId === userId;
+          const targetUserId = isVendorActor ? booking.residentId : vendor.userId;
+          const actorName = isVendorActor ? vendor.businessName : "The resident";
+
+          await createNotification({
+            userId: targetUserId,
+            type: "BOOKING_UPDATE",
+            title: "Booking Completed ✅",
+            body: `${actorName} has marked your booking as completed.`,
             metadata: { bookingId: booking.id },
           });
         }
