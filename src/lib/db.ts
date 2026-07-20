@@ -41,6 +41,13 @@ export async function ensureDbSync() {
   if (!syncPromise) {
     syncPromise = (async () => {
       try {
+        console.log("ℹ️ Server connecting to DB:", {
+          host: process.env.DB_HOST,
+          port: process.env.DB_PORT,
+          database: process.env.DB_NAME,
+          user: process.env.DB_USER,
+          ssl: process.env.DB_SSL
+        });
         // Import models to ensure they're registered before sync
         await import("@/lib/models");
         await sequelize.sync({ alter: process.env.NODE_ENV === "development" });
