@@ -17,6 +17,7 @@ try {
     maxRetriesPerRequest: null, // Required by BullMQ
     enableReadyCheck: false,
     lazyConnect: true,
+    connectTimeout: 2000, // Timeout connection attempts after 2 seconds
     retryStrategy(times) {
       if (times > 3) {
         console.warn("⚠️ Redis connection failed after 3 retries. Running without Redis.");
