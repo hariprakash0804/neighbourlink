@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: neighborlink-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=mysql://neighbor_user:neighbor_secure_pass@mysql:3306/neighborlink_db
+      - REDIS_URL=redis://redis:6379
+      - MEILISEARCH_HOST=http://meilisearch:7700
+      - MEILISEARCH_MASTER_KEY=meili_secure_master_key_12345
+      - NEXTAUTH_URL=https://yourdomain.com
+      - AUTH_SECRET=generate_your_own_secure_32_characters_secret_here_!!!
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minio_admin_user
+      - MINIO_SECRET_KEY=minio_admin_password_secure
+      - MINIO_BUCKET=neighborlink-uploads
+      - MINIO_USE_SSL=false
+    depends_on:
+      - mysql
+      - redis
+      - meilisearch
+      - minio
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: neighborlink-mysql
+    restart: always
+    environment:
+      - MYSQL_DATABASE=neighborlink_db
+      - MYSQL_USER=neighbor_user
+      - MYSQL_PASSWORD=neighbor_secure_pass
+      - MYSQL_ROOT_PASSWORD=mysql_secure_root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: neighborlink-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Meilisearch Engine
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    container_name: neighborlink-meilisearch
+    restart: always
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_ENV=production
+      - MEILI_MASTER_KEY=meili_secure_master_key_12345
+    volumes:
+      - meili_data:/meili_data
+
+  # MinIO Object Storage (S3 alternative)
+  minio:
+    image: minio/minio:RELEASE.2023-11-20T22-40-07Z
+    container_name: neighborlink-minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minio_admin_user
+      - MINIO_ROOT_PASSWORD=minio_admin_password_secure
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
+volumes:
+  mysql_data:
+  redis_data:
+  meili_data:
+  minio_data:
