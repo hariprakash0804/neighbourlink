@@ -18,6 +18,7 @@ try {
     enableReadyCheck: false,
     lazyConnect: true,
     connectTimeout: 2000, // Timeout connection attempts after 2 seconds
+    enableOfflineQueue: false, // Fail commands instantly if connection is down/offline (prevents hangs)
     retryStrategy(times) {
       if (times > 3) {
         console.warn("⚠️ Redis connection failed after 3 retries. Running without Redis.");
