@@ -17,8 +17,6 @@ export const notificationsRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
-
       const offset = (input.page - 1) * input.limit;
       const { rows, count } = await Notification.findAndCountAll({
         where: { userId },
@@ -48,8 +46,6 @@ export const notificationsRouter = router({
    */
   unreadCount: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.userId;
-    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
-
     const count = await Notification.count({
       where: { userId, read: false },
     });
@@ -64,8 +60,6 @@ export const notificationsRouter = router({
     .input(z.object({ notificationId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
-
       const notification = await Notification.findOne({
         where: { id: input.notificationId, userId },
       });
@@ -80,8 +74,6 @@ export const notificationsRouter = router({
 
   markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.userId;
-    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
-
     await Notification.update(
       { read: true },
       { where: { userId, read: false } }
