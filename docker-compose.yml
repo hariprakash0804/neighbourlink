@@ -13,11 +13,16 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=mysql://neighbor_user:neighbor_secure_pass@mysql:3306/neighborlink_db
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=neighborlink_db
+      - DB_USER=neighbor_user
+      - DB_PASSWORD=neighbor_secure_pass
       - REDIS_URL=redis://redis:6379
       - MEILISEARCH_HOST=http://meilisearch:7700
-      - MEILISEARCH_MASTER_KEY=meili_secure_master_key_12345
+      - MEILISEARCH_API_KEY=meili_secure_master_key_12345
       - NEXTAUTH_URL=https://yourdomain.com
+      - NEXT_PUBLIC_APP_URL=https://yourdomain.com
       - AUTH_SECRET=generate_your_own_secure_32_characters_secret_here_!!!
       - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
