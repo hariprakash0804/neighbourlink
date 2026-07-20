@@ -601,7 +601,7 @@ function DirectoryContent() {
       </div>
 
       {/* Mobile Toggle Button */}
-      <div className="lg:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
+      <div className="lg:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999]">
         <button
           onClick={() => setMobileView(mobileView === "list" ? "map" : "list")}
           className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-primary to-brand-accent px-5 py-3 text-sm font-semibold text-white shadow-elevated border border-white/20 select-none"
@@ -630,7 +630,7 @@ function DirectoryContent() {
       {/* Booking Overlay Modal */}
       <AnimatePresence>
         {bookingVendor && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
