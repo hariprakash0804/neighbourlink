@@ -34,13 +34,19 @@ declare module "@auth/core/jwt" {
 }
 
 // ─── Security: Validate AUTH_SECRET at startup ───────────────────────────────
-const authSecret = process.env.AUTH_SECRET;
-if (!authSecret || authSecret.length < 32) {
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+const authSecret = process.env.AUTH_SECRET || "fallback_auth_secret_placeholder_for_nextjs_builds_32_chars_long";
+
+if (!process.env.AUTH_SECRET || process.env.AUTH_SECRET.length < 32) {
   if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "❌ FATAL: AUTH_SECRET must be set and at least 32 characters in production. " +
-      "Generate one with: openssl rand -base64 32"
-    );
+    if (!isBuildPhase) {
+      throw new Error(
+        "❌ FATAL: AUTH_SECRET must be set and at least 32 characters in production. " +
+        "Generate one with: openssl rand -base64 32"
+      );
+    } else {
+      console.warn("⚠️ AUTH_SECRET is missing during next build. Using compilation fallback.");
+    }
   } else {
     console.warn(
       "⚠️ AUTH_SECRET is missing or too short. Using a fallback for development. " +
