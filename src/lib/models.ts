@@ -30,9 +30,10 @@ export type ReportStatus = (typeof REPORT_STATUSES)[number];
 // ─── User ─────────────────────────────────────────────────────────────────────
 export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<string>;
-  declare phone: string;
+  declare phone: CreationOptional<string | null>;
   declare name: CreationOptional<string | null>;
   declare email: CreationOptional<string | null>;
+  declare passwordHash: CreationOptional<string | null>;
   declare role: CreationOptional<Role>;
   declare notificationPrefs: CreationOptional<object | null>;
   declare createdAt: CreationOptional<Date>;
@@ -48,7 +49,7 @@ User.init(
     },
     phone: {
       type: DataTypes.STRING(20),
-      allowNull: false,
+      allowNull: true,
       unique: true,
     },
     name: {
@@ -59,6 +60,10 @@ User.init(
       type: DataTypes.STRING(255),
       allowNull: true,
       unique: true,
+    },
+    passwordHash: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
     },
     role: {
       type: DataTypes.ENUM(...ROLES),

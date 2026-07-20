@@ -1,46 +1,56 @@
 import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { z } from "zod";
-import { sendOtp as sendOtpService } from "@/lib/otp";
-import { checkRateLimit } from "@/lib/rate-limit";
 import { TRPCError } from "@trpc/server";
 import { User } from "@/lib/models";
+import { hashPassword } from "@/lib/auth-crypto";
 
 export const authRouter = router({
   /**
-   * Send OTP to phone number
-   * This doesn't go through NextAuth — it's a pre-auth step
+   * Register a new user with email and password
    */
-  sendOtp: publicProcedure
+  register: publicProcedure
     .input(
       z.object({
-        phone: z
-          .string()
-          .min(10, "Phone number must be at least 10 digits")
-          .max(15, "Phone number is too long")
-          .regex(/^\+?[0-9]+$/, "Invalid phone number format"),
+        email: z.string().email("Invalid email address"),
+        password: z.string().min(6, "Password must be at least 6 characters"),
+        name: z.string().min(2, "Name must be at least 2 characters"),
+        phone: z.string().min(10, "Phone number must be at least 10 digits").max(15, "Phone number is too long"),
+        role: z.enum(["RESIDENT", "VENDOR"]).default("RESIDENT"),
       })
     )
     .mutation(async ({ input }) => {
-      // Normalize phone: ensure it starts with country code
-      let phone = input.phone.replace(/\D/g, "");
-      if (phone.length === 10) {
-        phone = `+91${phone}`;
-      } else if (!phone.startsWith("+")) {
-        phone = `+${phone}`;
-      }
-
-      // Apply rate limit: 3 requests per phone per minute (60 seconds)
-      const rateLimitKey = `rate:otp:${phone}`;
-      const limitResult = await checkRateLimit(rateLimitKey, 3, 60);
-      if (!limitResult.allowed) {
+      // Check if email already exists
+      const existingUser = await User.findOne({ where: { email: input.email } });
+      if (existingUser) {
         throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "Too many OTP requests. Please wait one minute before requesting again.",
+          code: "CONFLICT",
+          message: "A user with this email address already exists.",
         });
       }
 
-      const result = await sendOtpService(phone);
-      return result;
+      // Check if phone number already exists
+      const existingPhone = await User.findOne({ where: { phone: input.phone } });
+      if (existingPhone) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "A user with this phone number already exists.",
+        });
+      }
+
+      const passwordHash = hashPassword(input.password);
+
+      const user = await User.create({
+        email: input.email,
+        phone: input.phone,
+        name: input.name,
+        passwordHash,
+        role: input.role,
+      });
+
+      return {
+        success: true,
+        userId: user.id,
+      };
     }),
 
   /**
@@ -57,7 +67,7 @@ export const authRouter = router({
 
       return {
         id: user.id,
-        phone: user.phone,
+        phone: user.phone || "",
         name: user.name || "",
         email: user.email || "",
         role: user.role,

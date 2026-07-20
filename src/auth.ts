@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { verifyOtp } from "@/lib/otp";
+import { verifyPassword } from "@/lib/auth-crypto";
 import { ensureDbSync } from "@/lib/db";
 import { User as UserModel } from "@/lib/models";
 
@@ -8,18 +8,18 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      phone: string;
+      email: string;
+      phone?: string | null;
       name?: string | null;
-      email?: string | null;
       role: string;
     };
   }
 
   interface User {
     id: string;
-    phone: string;
+    email: string;
+    phone?: string | null;
     name?: string | null;
-    email?: string | null;
     role: string;
   }
 }
@@ -27,7 +27,8 @@ declare module "next-auth" {
 declare module "@auth/core/jwt" {
   interface JWT {
     id: string;
-    phone: string;
+    email: string;
+    phone?: string | null;
     role: string;
   }
 }
@@ -72,50 +73,45 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   providers: [
     Credentials({
-      id: "phone-otp",
-      name: "Phone OTP",
+      id: "credentials",
+      name: "Credentials",
       credentials: {
-        phone: { label: "Phone", type: "text" },
-        otp: { label: "OTP", type: "text" },
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const phone = credentials?.phone as string;
-        const otp = credentials?.otp as string;
+        const email = credentials?.email as string;
+        const password = credentials?.password as string;
 
-        if (!phone || !otp) {
-          return null;
-        }
-
-        // Verify OTP
-        const result = await verifyOtp(phone, otp);
-        if (!result.success) {
-          throw new Error(result.message);
+        if (!email || !password) {
+          throw new Error("Email and password are required.");
         }
 
         // Ensure DB tables exist before querying
         await ensureDbSync();
 
-        // Find or create user
         try {
-          let user = await UserModel.findOne({ where: { phone } });
+          const user = await UserModel.findOne({ where: { email } });
 
-          if (!user) {
-            user = await UserModel.create({
-              phone,
-              role: "RESIDENT",
-            });
+          if (!user || !user.passwordHash) {
+            throw new Error("Invalid email or password.");
+          }
+
+          const isValid = verifyPassword(password, user.passwordHash);
+          if (!isValid) {
+            throw new Error("Invalid email or password.");
           }
 
           return {
             id: user.id,
-            phone: user.phone,
+            email: user.email || "",
+            phone: user.phone || null,
             name: user.name,
-            email: user.email,
             role: user.role,
           };
-        } catch (dbError) {
+        } catch (dbError: any) {
           console.error("Database error during auth:", dbError);
-          throw new Error("Database error. Please ensure MySQL is running and try again.");
+          throw new Error(dbError.message || "Authentication error. Please try again.");
         }
       },
     }),
@@ -124,13 +120,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.phone = (user as { phone: string }).phone;
+        token.email = user.email;
+        token.phone = (user as { phone: string | null }).phone || null;
         token.role = (user as { role: string }).role;
       }
       return token;
     },
     async session({ session, token }) {
       session.user.id = token.id;
+      session.user.email = token.email;
       session.user.phone = token.phone;
       session.user.role = token.role;
       return session;
