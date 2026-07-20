@@ -465,6 +465,7 @@ export default function CommunityHubPage() {
                   <h3 className="font-bold text-sm text-text-primary leading-snug">{post.title}</h3>
                   <p className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">{post.content}</p>
                   {post.photoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={formatImageUrl(post.photoUrl)}
                       alt={post.title}
@@ -517,6 +518,7 @@ export default function CommunityHubPage() {
             {civicData?.reports.map((report) => (
               <div key={report.id} className="clay-card p-4 border border-white/5 flex flex-col md:flex-row gap-4 items-start">
                 {report.photoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={formatImageUrl(report.photoUrl)}
                     alt={report.category}
@@ -635,6 +637,7 @@ export default function CommunityHubPage() {
                   </div>
 
                   {event.photoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={formatImageUrl(event.photoUrl)}
                       alt={event.title}
@@ -1169,6 +1172,7 @@ export default function CommunityHubPage() {
                         )}
                       </div>
                       {uploadedUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={formatImageUrl(uploadedUrl)}
                           alt="Preview"

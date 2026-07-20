@@ -32,7 +32,7 @@ const itemVariants = {
 
 export default function FavoritesPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const [removingId, setRemovingId] = useState<string | null>(null);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -58,7 +58,7 @@ function ChatContent() {
   const markReadMutation = trpc.chat.markRead.useMutation();
 
   const conversations = conversationsData?.conversations || [];
-  const messages = conversationHistory?.messages || [];
+  const messages = useMemo(() => conversationHistory?.messages || [], [conversationHistory?.messages]);
 
   // Mark messages as read when opening a conversation
   useEffect(() => {
@@ -69,7 +69,8 @@ function ChatContent() {
         }
       });
     }
-  }, [recipientId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipientId, session?.user?.id]);
 
   // Scroll to bottom on new messages
   useEffect(() => {

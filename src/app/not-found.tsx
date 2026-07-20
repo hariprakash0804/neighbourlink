@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Home, Search, ShieldAlert } from "lucide-react";
+import { Compass, Home, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 

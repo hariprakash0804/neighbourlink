@@ -42,7 +42,7 @@ module.exports = {
     });
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     // Revert all additions
     await queryInterface.removeColumn("users", "notification_prefs");
     await queryInterface.removeColumn("reviews", "reply");

@@ -1,4 +1,4 @@
-import { router, protectedProcedure, publicProcedure, rateLimitedProcedure } from "../trpc";
+import { router, publicProcedure, rateLimitedProcedure } from "../trpc";
 import { z } from "zod";
 import { Review, Vendor, User } from "@/lib/models";
 import { TRPCError } from "@trpc/server";

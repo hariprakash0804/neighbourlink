@@ -11,20 +11,13 @@ import {
   List,
   Map as MapIcon,
   HelpCircle,
-  Clock,
   CheckCircle,
   AlertCircle,
-  Star,
   Search,
-  MessageSquare,
-  ShieldAlert,
-  Heart,
-  Share2,
   ArrowUpDown,
-  Scale,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { cn, formatDistance, formatPhone, telLink, whatsappLink, shareContent } from "@/lib/utils";
+import { cn, formatDistance, formatPhone, telLink, shareContent } from "@/lib/utils";
 import { ESSENTIAL_CATEGORY_META, VENDOR_CATEGORY_META } from "@/lib/constants";
 import { Map } from "@/components/map/Map";
 import { useSession } from "next-auth/react";
@@ -113,22 +106,7 @@ function DirectoryContent() {
     }
   }, [activeCategory]);
 
-  // Helper: Check if vendor is currently open
-  const isOpenNow = (workingHours: Record<string, any> | null): boolean | null => {
-    if (!workingHours || !workingHours.open || !workingHours.close) return null;
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const [openH, openM] = workingHours.open.split(":").map(Number);
-    const [closeH, closeM] = workingHours.close.split(":").map(Number);
-    const openMin = openH * 60 + (openM || 0);
-    const closeMin = closeH * 60 + (closeM || 0);
-    if (closeMin > openMin) {
-      return currentMinutes >= openMin && currentMinutes <= closeMin;
-    } else {
-      // Wraps midnight
-      return currentMinutes >= openMin || currentMinutes <= closeMin;
-    }
-  };
+
 
   // Favorites
   const toggleFavorite = trpc.favorites.toggle.useMutation();

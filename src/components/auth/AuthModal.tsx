@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Lock, User as UserIcon, Phone, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
@@ -77,7 +77,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           onClose();
         }, 1500);
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);

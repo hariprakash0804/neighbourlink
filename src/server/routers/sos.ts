@@ -1,7 +1,6 @@
 import { router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { SosAlert } from "@/lib/models";
-import { TRPCError } from "@trpc/server";
 
 export const sosRouter = router({
   /**

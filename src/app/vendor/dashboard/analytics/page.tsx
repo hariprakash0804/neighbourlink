@@ -1,17 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import {
   TrendingUp,
   Star,
   Calendar,
-  Clock,
   ArrowLeft,
-  DollarSign,
   ClipboardCheck,
-  Percent,
-  XCircle,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -19,7 +13,6 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default function VendorAnalyticsPage() {
-  const router = useRouter();
 
   // Query analytics endpoint
   const { data, isLoading, error } = trpc.vendor.getAnalytics.useQuery(undefined, {
