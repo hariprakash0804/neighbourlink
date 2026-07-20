@@ -7,11 +7,12 @@ let client: Meilisearch | null = null;
 
 // Initialize client lazily to avoid connection attempts during static analysis/build
 export function getMeiliClient(): Meilisearch | null {
-  if (!process.env.MEILISEARCH_HOST) {
+  const meiliHost = process.env.MEILISEARCH_HOST;
+  if (!meiliHost || meiliHost === "" || (process.env.NODE_ENV === "production" && meiliHost.includes("localhost"))) {
     return null;
   }
   if (!client) {
-    client = new Meilisearch({ host, apiKey });
+    client = new Meilisearch({ host: meiliHost, apiKey });
   }
   return client;
 }
