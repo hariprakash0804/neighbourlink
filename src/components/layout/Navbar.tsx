@@ -171,7 +171,7 @@ export function Navbar() {
       </div>
 
       {/* Main Navbar — Glassmorphism */}
-      <header className="sticky top-0 z-50 glass-strong" role="navigation" aria-label="Main navigation">
+      <header className="sticky top-0 z-[1001] glass-strong" role="navigation" aria-label="Main navigation">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Logo */}
