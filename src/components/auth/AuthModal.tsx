@@ -196,7 +196,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                           setError("");
                         }}
                         placeholder="Email Address"
-                        className="w-full rounded-2xl py-3.5 pl-12 pr-4 text-xs glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
+                        className="w-full rounded-2xl py-3.5 pl-12 pr-4 text-xs text-text-primary glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
                       />
                     </div>
 
@@ -211,7 +211,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                           setError("");
                         }}
                         placeholder="Password"
-                        className="w-full rounded-2xl py-3.5 pl-12 pr-4 text-xs glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
+                        className="w-full rounded-2xl py-3.5 pl-12 pr-4 text-xs text-text-primary glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
                       />
                     </div>
 
@@ -321,7 +321,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                           setError("");
                         }}
                         placeholder="Full Name"
-                        className="w-full rounded-2xl py-3 pl-12 pr-4 text-xs glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
+                        className="w-full rounded-2xl py-3 pl-12 pr-4 text-xs text-text-primary glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
                       />
                     </div>
 
@@ -336,7 +336,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                           setError("");
                         }}
                         placeholder="Email Address"
-                        className="w-full rounded-2xl py-3 pl-12 pr-4 text-xs glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
+                        className="w-full rounded-2xl py-3 pl-12 pr-4 text-xs text-text-primary glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
                       />
                     </div>
 
@@ -351,7 +351,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                           setError("");
                         }}
                         placeholder="Phone Number"
-                        className="w-full rounded-2xl py-3 pl-12 pr-4 text-xs glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
+                        className="w-full rounded-2xl py-3 pl-12 pr-4 text-xs text-text-primary glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
                       />
                     </div>
 
@@ -366,7 +366,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                           setError("");
                         }}
                         placeholder="Password (min 6 characters)"
-                        className="w-full rounded-2xl py-3 pl-12 pr-4 text-xs glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
+                        className="w-full rounded-2xl py-3 pl-12 pr-4 text-xs text-text-primary glass border border-white/5 focus:outline-none focus:border-brand-primary/50 placeholder:text-text-muted"
                       />
                     </div>
 

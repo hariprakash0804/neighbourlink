@@ -14,10 +14,14 @@ interface SidebarProps {
 function CategoryChip({
   category,
   isActive,
+  isPopular,
+  popularBadgeClass,
   onClick,
 }: {
   category: CategoryMeta;
   isActive: boolean;
+  isPopular?: boolean;
+  popularBadgeClass?: string;
   onClick: () => void;
 }) {
   const Icon = category.icon;
@@ -42,11 +46,16 @@ function CategoryChip({
       >
         <Icon className="h-4 w-4" style={{ color: isActive ? category.color : undefined }} />
       </div>
-      <span className="truncate">{category.label}</span>
+      <span className="truncate flex-1 text-left">{category.label}</span>
+      {isPopular && (
+        <span className={cn("text-[9px] px-2 py-0.5 rounded-full font-bold select-none shrink-0", popularBadgeClass || "bg-brand-primary/10 text-brand-primary")}>
+          Popular
+        </span>
+      )}
       {isActive && (
         <motion.div
           layoutId="sidebar-indicator"
-          className="ml-auto"
+          className="shrink-0"
           transition={{ type: "spring", stiffness: 500, damping: 30 }}
         >
           <ChevronRight className="h-4 w-4 text-brand-primary" />
@@ -194,18 +203,14 @@ export function Sidebar({ className }: SidebarProps) {
             >
               <div className="space-y-0.5 pb-2">
                 {filteredEssential.map((cat) => (
-                  <div key={cat.value} className="relative flex items-center group">
-                    <CategoryChip
-                      category={cat}
-                      isActive={activeCategory === cat.value}
-                      onClick={() => handleCategoryClick(cat.value)}
-                    />
-                    {popularCategories.includes(cat.value) && (
-                      <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[9px] bg-brand-primary/10 text-brand-primary px-1.5 py-0.5 rounded-full font-bold select-none">
-                        Popular
-                      </span>
-                    )}
-                  </div>
+                  <CategoryChip
+                    key={cat.value}
+                    category={cat}
+                    isActive={activeCategory === cat.value}
+                    isPopular={popularCategories.includes(cat.value)}
+                    popularBadgeClass="bg-brand-primary/10 text-brand-primary"
+                    onClick={() => handleCategoryClick(cat.value)}
+                  />
                 ))}
               </div>
             </motion.div>
@@ -244,18 +249,14 @@ export function Sidebar({ className }: SidebarProps) {
             >
               <div className="space-y-0.5 pb-2">
                 {filteredVendor.map((cat) => (
-                  <div key={cat.value} className="relative flex items-center group">
-                    <CategoryChip
-                      category={cat}
-                      isActive={activeCategory === cat.value}
-                      onClick={() => handleCategoryClick(cat.value)}
-                    />
-                    {popularCategories.includes(cat.value) && (
-                      <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[9px] bg-brand-accent/10 text-brand-accent px-1.5 py-0.5 rounded-full font-bold select-none">
-                        Popular
-                      </span>
-                    )}
-                  </div>
+                  <CategoryChip
+                    key={cat.value}
+                    category={cat}
+                    isActive={activeCategory === cat.value}
+                    isPopular={popularCategories.includes(cat.value)}
+                    popularBadgeClass="bg-brand-accent/10 text-brand-accent"
+                    onClick={() => handleCategoryClick(cat.value)}
+                  />
                 ))}
               </div>
             </motion.div>
