@@ -77,10 +77,12 @@ export default function ProfilePage() {
   const [vendorError, setVendorError] = useState("");
 
   // Vendor queries & mutations
-  const { data: vendorProfile, isLoading: isVendorLoading, refetch: refetchVendor } = trpc.vendor.getOwnProfile.useQuery(undefined, {
+  const { data: vendorProfile, isLoading: isVendorLoading, error: vendorFetchError, refetch: refetchVendor } = trpc.vendor.getOwnProfile.useQuery(undefined, {
     enabled: status === "authenticated" && profile?.role === "VENDOR",
     retry: false,
   });
+
+  const isRealVendorLoading = isVendorLoading && !vendorFetchError;
 
   const updateVendorMutation = trpc.vendor.updateProfile.useMutation({
     onSuccess: async () => {
@@ -481,7 +483,7 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {isVendorLoading ? (
+            {isRealVendorLoading ? (
               <div className="flex justify-center py-6">
                 <span className="animate-spin h-6 w-6 border-2 border-brand-primary border-t-transparent rounded-full" />
               </div>
