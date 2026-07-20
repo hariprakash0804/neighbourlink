@@ -227,6 +227,7 @@ Vendor.init(
     indexes: [
       { fields: ["lat", "lng"] },
       { fields: ["userId"] },
+      { fields: ["category", "lat", "lng"] },
     ],
   }
 );
@@ -348,7 +349,15 @@ Booking.init(
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
   },
-  { sequelize, modelName: "Booking", tableName: "bookings" }
+  {
+    sequelize,
+    modelName: "Booking",
+    tableName: "bookings",
+    indexes: [
+      { fields: ["residentId"] },
+      { fields: ["vendorId", "status"] },
+    ],
+  }
 );
 
 // ─── Review ───────────────────────────────────────────────────────────────────
@@ -403,7 +412,14 @@ Review.init(
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
   },
-  { sequelize, modelName: "Review", tableName: "reviews" }
+  {
+    sequelize,
+    modelName: "Review",
+    tableName: "reviews",
+    indexes: [
+      { fields: ["vendorId"] },
+    ],
+  }
 );
 
 // ─── Report ───────────────────────────────────────────────────────────────────
@@ -604,7 +620,14 @@ ChatMessage.init(
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
   },
-  { sequelize, modelName: "ChatMessage", tableName: "chat_messages" }
+  {
+    sequelize,
+    modelName: "ChatMessage",
+    tableName: "chat_messages",
+    indexes: [
+      { fields: ["senderId", "recipientId"] },
+    ],
+  }
 );
 
 // ─── Associations ─────────────────────────────────────────────────────────────

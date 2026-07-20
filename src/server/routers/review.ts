@@ -5,6 +5,7 @@ import { TRPCError } from "@trpc/server";
 import { enqueueRatingRecompute } from "@/lib/queue";
 import { containsProfanityOrSpam } from "@/lib/moderation";
 import { createNotification } from "./notifications";
+import { invalidateVendorCache } from "@/lib/cache";
 
 export const reviewRouter = router({
   /**
@@ -80,6 +81,8 @@ export const reviewRouter = router({
         body: `${user?.name || "A resident"} left a ${input.rating}-star review${input.comment ? " with a comment" : ""}.`,
         metadata: { reviewId: review.id, vendorId: input.vendorId, rating: input.rating },
       });
+
+      await invalidateVendorCache(input.vendorId, vendor.userId);
 
       return {
         success: true,

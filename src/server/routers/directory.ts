@@ -6,6 +6,7 @@ import { Op } from "sequelize";
 import { getMeiliClient } from "@/lib/meilisearch";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { TRPCError } from "@trpc/server";
+import { getCache, setCache, CACHE_TTLS } from "@/lib/cache";
 
 // All valid categories for validation
 const ALL_VALID_CATEGORIES = new Set<string>([
@@ -177,6 +178,9 @@ export const directoryRouter = router({
       })
     )
     .query(async ({ input }) => {
+      const cacheKey = `cache:search:${JSON.stringify(input)}`;
+      const cached = await getCache<any>(cacheKey);
+      if (cached) return { ...cached, provider: "cache" };
       const {
         category,
         lat,
@@ -261,9 +265,13 @@ export const directoryRouter = router({
             availableNow,
           });
 
-          return {
+          const result = {
             vendors: processedVendors,
             total: processedVendors.length,
+          };
+          await setCache(cacheKey, result, CACHE_TTLS.SEARCH_RESULTS);
+          return {
+            ...result,
             provider: "meilisearch",
           };
         } catch (meiliError) {
@@ -338,9 +346,13 @@ export const directoryRouter = router({
         availableNow,
       });
 
-      return {
+      const result = {
         vendors: processedVendors,
         total: processedVendors.length,
+      };
+      await setCache(cacheKey, result, CACHE_TTLS.SEARCH_RESULTS);
+      return {
+        ...result,
         provider: "database",
       };
     }),
@@ -352,6 +364,10 @@ export const directoryRouter = router({
   getVendorById: publicProcedure
     .input(z.object({ vendorId: z.string() }))
     .query(async ({ input }) => {
+      const cacheKey = `cache:vendor:id:${input.vendorId}`;
+      const cached = await getCache<any>(cacheKey);
+      if (cached) return { vendor: cached };
+
       const vendor = await Vendor.findByPk(input.vendorId, {
         include: [{ model: User, as: "user", attributes: ["phone", "name"] }],
       });
@@ -360,24 +376,28 @@ export const directoryRouter = router({
         return { vendor: null };
       }
 
+      const vendorData = {
+        id: vendor.id,
+        userId: vendor.userId,
+        category: vendor.category,
+        businessName: vendor.businessName,
+        description: vendor.description,
+        lat: vendor.lat,
+        lng: vendor.lng,
+        serviceRadiusM: vendor.serviceRadiusM,
+        priceInfo: vendor.priceInfo,
+        workingHours: vendor.workingHours,
+        verificationTier: vendor.verificationTier,
+        ratingAvg: vendor.ratingAvg,
+        ratingCount: vendor.ratingCount,
+        responseTimeMin: vendor.responseTimeMin,
+        phone: vendor.user?.phone || null,
+      };
+
+      await setCache(cacheKey, vendorData, CACHE_TTLS.VENDOR_PROFILE);
+
       return {
-        vendor: {
-          id: vendor.id,
-          userId: vendor.userId,
-          category: vendor.category,
-          businessName: vendor.businessName,
-          description: vendor.description,
-          lat: vendor.lat,
-          lng: vendor.lng,
-          serviceRadiusM: vendor.serviceRadiusM,
-          priceInfo: vendor.priceInfo,
-          workingHours: vendor.workingHours,
-          verificationTier: vendor.verificationTier,
-          ratingAvg: vendor.ratingAvg,
-          ratingCount: vendor.ratingCount,
-          responseTimeMin: vendor.responseTimeMin,
-          phone: vendor.user?.phone || null,
-        },
+        vendor: vendorData,
       };
     }),
 

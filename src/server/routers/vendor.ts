@@ -5,6 +5,7 @@ import { uploadFile } from "@/lib/storage";
 import { TRPCError } from "@trpc/server";
 import { indexVendors } from "@/lib/meilisearch";
 import { containsProfanityOrSpam } from "@/lib/moderation";
+import { getCache, setCache, CACHE_TTLS, invalidateVendorCache, invalidateSearchCache } from "@/lib/cache";
 
 // Allowed file types for vendor document uploads
 const ALLOWED_FILE_TYPES = new Set([
@@ -92,6 +93,7 @@ export const vendorRouter = router({
         responseTimeMin: null,
       });
 
+      await invalidateSearchCache();
       return { success: true, vendorId: vendor.id };
     }),
 
@@ -151,6 +153,7 @@ export const vendorRouter = router({
       // Update vendor document URL
       await Vendor.update({ idDocumentUrl: documentUrl }, { where: { id: input.vendorId } });
 
+      await invalidateVendorCache(input.vendorId, userId);
       return { success: true, documentUrl };
     }),
 
@@ -224,6 +227,7 @@ export const vendorRouter = router({
         }
       }
 
+      await invalidateVendorCache(input.vendorId, userId);
       return { success: true };
     }),
 
@@ -232,6 +236,10 @@ export const vendorRouter = router({
    */
   getOwnProfile: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.userId;
+    const cacheKey = `cache:vendor:user:${userId}`;
+    const cached = await getCache<any>(cacheKey);
+    if (cached) return cached;
+
     const vendor = await Vendor.findOne({ where: { userId } });
     if (!vendor) {
       throw new TRPCError({
@@ -239,7 +247,8 @@ export const vendorRouter = router({
         message: "Vendor profile not found for this user.",
       });
     }
-    return {
+
+    const result = {
       id: vendor.id,
       userId: vendor.userId,
       category: vendor.category,
@@ -257,6 +266,9 @@ export const vendorRouter = router({
       responseTimeMin: vendor.responseTimeMin,
       createdAt: vendor.createdAt.toISOString(),
     };
+
+    await setCache(cacheKey, result, CACHE_TTLS.VENDOR_PROFILE);
+    return result;
   }),
 
   /**

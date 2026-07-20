@@ -133,37 +133,50 @@ export const chatRouter = router({
     }
 
     const conversations = [];
+    const otherUserIds = Array.from(conversationMap.keys());
 
-    // Fetch details for each conversation partner
-    for (const [otherId, info] of conversationMap.entries()) {
-      const user = await User.findByPk(otherId, {
+    if (otherUserIds.length > 0) {
+      // 1. Batch fetch all conversation partner User records
+      const users = await User.findAll({
+        where: { id: { [Op.in]: otherUserIds } },
         attributes: ["id", "name", "phone", "role"],
       });
 
-      if (!user) continue;
-
-      // If they are a VENDOR, look up their businessName
-      let businessName: string | null = null;
-      if (user.role === "VENDOR") {
-        const vendor = await Vendor.findOne({ where: { userId: otherId }, attributes: ["businessName"] });
-        businessName = vendor?.businessName || null;
+      // 2. Identify vendor user IDs for batch fetching
+      const vendorUserIds = users.filter((u) => u.role === "VENDOR").map((u) => u.id);
+      
+      let vendors: Vendor[] = [];
+      if (vendorUserIds.length > 0) {
+        vendors = await Vendor.findAll({
+          where: { userId: { [Op.in]: vendorUserIds } },
+          attributes: ["userId", "businessName"],
+        });
       }
 
-      conversations.push({
-        user: {
-          id: user.id,
-          name: user.name || "User",
-          phone: user.phone,
-          role: user.role,
-          businessName,
-        },
-        lastMessage: {
-          content: info.lastMsg.content,
-          createdAt: info.lastMsg.createdAt.toISOString(),
-          senderId: info.lastMsg.senderId,
-        },
-        unreadCount: info.unreadCount,
-      });
+      // 3. Assemble response using in-memory mappings
+      for (const [otherId, info] of conversationMap.entries()) {
+        const user = users.find((u) => u.id === otherId);
+        if (!user) continue;
+
+        const vendor = vendors.find((v) => v.userId === otherId);
+        const businessName = vendor?.businessName || null;
+
+        conversations.push({
+          user: {
+            id: user.id,
+            name: user.name || "User",
+            phone: user.phone,
+            role: user.role,
+            businessName,
+          },
+          lastMessage: {
+            content: info.lastMsg.content,
+            createdAt: info.lastMsg.createdAt.toISOString(),
+            senderId: info.lastMsg.senderId,
+          },
+          unreadCount: info.unreadCount,
+        });
+      }
     }
 
     return { conversations };
