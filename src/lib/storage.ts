@@ -2,11 +2,11 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
 import path from "path";
 
-const endpoint = process.env.MINIO_ENDPOINT || "localhost";
+const endpoint = process.env.MINIO_ENDPOINT || "";
 const port = process.env.MINIO_PORT || "9000";
 const accessKeyId = process.env.MINIO_ACCESS_KEY || "minioadmin";
 const secretAccessKey = process.env.MINIO_SECRET_KEY || "minioadmin";
-const bucketName = "neighborlink-docs";
+const bucketName = process.env.MINIO_BUCKET_NAME || "neighborlink-docs";
 
 let s3Client: S3Client | null = null;
 
@@ -16,14 +16,19 @@ function getS3Client(): S3Client | null {
     return null;
   }
   if (!s3Client) {
+    let s3Endpoint = endpoint;
+    // If endpoint doesn't contain a protocol, construct it using endpoint + port
+    if (!s3Endpoint.startsWith("http://") && !s3Endpoint.startsWith("https://")) {
+      s3Endpoint = `http://${endpoint}:${port}`;
+    }
     s3Client = new S3Client({
-      endpoint: `http://${endpoint}:${port}`,
+      endpoint: s3Endpoint,
       credentials: {
         accessKeyId,
         secretAccessKey,
       },
-      region: "us-east-1", // MinIO doesn't care, but AWS SDK requires it
-      forcePathStyle: true, // required for MinIO
+      region: process.env.MINIO_REGION || "us-east-1",
+      forcePathStyle: true, // required for MinIO / custom endpoints
     });
   }
   return s3Client;
@@ -78,7 +83,7 @@ export async function uploadFile(
     }
 
     const parentDir = path.dirname(filePath);
-    
+
     if (!fs.existsSync(parentDir)) {
       fs.mkdirSync(parentDir, { recursive: true });
     }
