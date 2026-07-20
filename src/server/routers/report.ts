@@ -18,9 +18,6 @@ export const reportRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const reporterId = ctx.session.userId;
-      if (!reporterId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       const report = await Report.create({
         reporterId,
@@ -87,9 +84,6 @@ export const reportRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const actorId = ctx.session.userId;
-      if (!actorId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       const report = await Report.findByPk(input.reportId);
       if (!report) {

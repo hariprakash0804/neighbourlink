@@ -25,7 +25,6 @@ export const eventsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       if (
         containsProfanityOrSpam(input.title) ||
@@ -109,7 +108,6 @@ export const eventsRouter = router({
     .input(z.object({ eventId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       const event = await LocalEvent.findByPk(input.eventId);
       if (!event) throw new TRPCError({ code: "NOT_FOUND" });

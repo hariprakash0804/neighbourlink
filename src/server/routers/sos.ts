@@ -19,7 +19,6 @@ export const sosRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       // Default emergency contacts if none provided
       const contacts = input.emergencyContacts?.length

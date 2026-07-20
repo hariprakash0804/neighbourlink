@@ -22,9 +22,6 @@ export const civicRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       if (input.description && containsProfanityOrSpam(input.description)) {
         throw new TRPCError({

@@ -24,7 +24,6 @@ export const carpoolRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       if (
         containsProfanityOrSpam(input.origin) ||
@@ -105,7 +104,6 @@ export const carpoolRouter = router({
     .input(z.object({ carpoolId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       const carpool = await Carpool.findByPk(input.carpoolId);
       if (!carpool) throw new TRPCError({ code: "NOT_FOUND" });

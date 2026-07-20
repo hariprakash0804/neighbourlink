@@ -11,7 +11,6 @@ export const favoritesRouter = router({
     .input(z.object({ vendorId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       // Check if vendor exists
       const vendor = await Vendor.findByPk(input.vendorId);
@@ -40,7 +39,6 @@ export const favoritesRouter = router({
     .input(z.object({ vendorId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       const existing = await Favorite.findOne({
         where: { userId, vendorId: input.vendorId },
@@ -54,7 +52,6 @@ export const favoritesRouter = router({
    */
   list: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.userId;
-    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
     const favorites = await Favorite.findAll({
       where: { userId },

@@ -22,7 +22,6 @@ export const bulletinRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       // Content moderation
       if (containsProfanityOrSpam(input.title) || containsProfanityOrSpam(input.content)) {
@@ -95,7 +94,6 @@ export const bulletinRouter = router({
     .input(z.object({ postId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       const post = await BulletinPost.findByPk(input.postId);
       if (!post) throw new TRPCError({ code: "NOT_FOUND" });

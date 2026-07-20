@@ -414,9 +414,6 @@ export const directoryRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
 
       // Rate limit check: 10 reveals per hour (3600 seconds)
       const rateLimitKey = `rate:reveal:${userId}`;

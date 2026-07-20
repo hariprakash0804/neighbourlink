@@ -23,7 +23,6 @@ export const jobsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       if (
         containsProfanityOrSpam(input.title) ||
@@ -99,7 +98,6 @@ export const jobsRouter = router({
     .input(z.object({ jobId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       const job = await JobPost.findByPk(input.jobId);
       if (!job) throw new TRPCError({ code: "NOT_FOUND" });
