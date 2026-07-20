@@ -231,7 +231,7 @@ Vendor.init(
     tableName: "vendors",
     indexes: [
       { fields: ["lat", "lng"] },
-      { fields: ["userId"] },
+      { fields: ["user_id"] },
       { fields: ["category", "lat", "lng"] },
     ],
   }
@@ -359,8 +359,8 @@ Booking.init(
     modelName: "Booking",
     tableName: "bookings",
     indexes: [
-      { fields: ["residentId"] },
-      { fields: ["vendorId", "status"] },
+      { fields: ["resident_id"] },
+      { fields: ["vendor_id", "status"] },
     ],
   }
 );
@@ -422,7 +422,7 @@ Review.init(
     modelName: "Review",
     tableName: "reviews",
     indexes: [
-      { fields: ["vendorId"] },
+      { fields: ["vendor_id"] },
     ],
   }
 );
@@ -630,7 +630,7 @@ ChatMessage.init(
     modelName: "ChatMessage",
     tableName: "chat_messages",
     indexes: [
-      { fields: ["senderId", "recipientId"] },
+      { fields: ["sender_id", "recipient_id"] },
     ],
   }
 );
@@ -810,7 +810,7 @@ Favorite.init(
     modelName: "Favorite",
     tableName: "favorites",
     indexes: [
-      { unique: true, fields: ["userId", "vendorId"] },
+      { unique: true, fields: ["user_id", "vendor_id"] },
     ],
   }
 );
@@ -853,7 +853,7 @@ Notification.init(
     modelName: "Notification",
     tableName: "notifications",
     indexes: [
-      { fields: ["userId", "read"] },
+      { fields: ["user_id", "read"] },
       { fields: ["createdAt"] },
     ],
   }
@@ -892,7 +892,7 @@ Deal.init(
     sequelize,
     modelName: "Deal",
     tableName: "deals",
-    indexes: [{ fields: ["vendorId"] }, { fields: ["validUntil"] }],
+    indexes: [{ fields: ["vendor_id"] }, { fields: ["valid_until"] }],
   }
 );
 
@@ -937,7 +937,7 @@ Carpool.init(
     sequelize,
     modelName: "Carpool",
     tableName: "carpools",
-    indexes: [{ fields: ["lat", "lng"] }, { fields: ["userId"] }],
+    indexes: [{ fields: ["lat", "lng"] }, { fields: ["user_id"] }],
   }
 );
 
@@ -980,7 +980,7 @@ JobPost.init(
     sequelize,
     modelName: "JobPost",
     tableName: "job_posts",
-    indexes: [{ fields: ["lat", "lng"] }, { fields: ["userId"] }],
+    indexes: [{ fields: ["lat", "lng"] }, { fields: ["user_id"] }],
   }
 );
 
