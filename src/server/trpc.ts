@@ -3,6 +3,7 @@ import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { auth } from "@/auth";
 import sequelize, { ensureDbSync } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 /**
  * Context — available in every tRPC procedure
@@ -29,6 +30,7 @@ export async function createContext(opts?: FetchCreateContextFnOptions) {
 
 export type Context = Awaited<ReturnType<typeof createContext>>;
 
+
 /**
  * tRPC initialization
  */
@@ -46,10 +48,45 @@ const t = initTRPC.context<Context>().create({
 });
 
 /**
+ * Global Request/Response Logging Middleware
+ */
+const loggingMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
+  const start = Date.now();
+  const actor = ctx.session ? `${ctx.session.role}:${ctx.session.userId}` : "anonymous";
+  
+  try {
+    const result = await next();
+    const duration = Date.now() - start;
+    if (result.ok) {
+      logger.info(`tRPC request: [${type}] ${path} - SUCCESS`, {
+        actor,
+        durationMs: duration,
+      });
+    } else {
+      logger.error(`tRPC request: [${type}] ${path} - ERROR`, {
+        actor,
+        durationMs: duration,
+        error: result.error.message,
+        code: result.error.code,
+      });
+    }
+    return result;
+  } catch (error: any) {
+    const duration = Date.now() - start;
+    logger.error(`tRPC request: [${type}] ${path} - CRASH`, {
+      actor,
+      durationMs: duration,
+      error: error.message || error,
+    });
+    throw error;
+  }
+});
+
+/**
  * Router and procedure exports
  */
 export const router = t.router;
-export const publicProcedure = t.procedure;
+export const publicProcedure = t.procedure.use(loggingMiddleware);
 
 /**
  * Protected procedure — requires authenticated session
