@@ -1,4 +1,5 @@
 import { Sequelize } from "sequelize";
+import mysql2 from "mysql2";
 
 const sequelize = new Sequelize(
   process.env.DB_NAME || "neighborlink",
@@ -8,6 +9,7 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || "localhost",
     port: parseInt(process.env.DB_PORT || "3306", 10),
     dialect: "mysql",
+    dialectModule: mysql2,
     dialectOptions: process.env.DB_SSL === "true" ? {
       ssl: {
         rejectUnauthorized: true,
