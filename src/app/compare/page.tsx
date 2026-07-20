@@ -45,9 +45,9 @@ function CompareContent() {
   );
 
   const allVendors = vendorsData?.vendors || [];
-  const selectedVendors = allVendors.filter((v) => selectedIds.includes(v.id));
+  const selectedVendors = allVendors.filter((v: any) => selectedIds.includes(v.id));
   const availableVendors = allVendors.filter(
-    (v) =>
+    (v: any) =>
       !selectedIds.includes(v.id) &&
       (searchQuery === "" ||
         v.businessName.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -116,7 +116,7 @@ function CompareContent() {
     let bestId: string | null = null;
     let bestScore = -Infinity;
 
-    selectedVendors.forEach((v) => {
+    selectedVendors.forEach((v: any) => {
       let score = 0;
       const price = v.priceInfo as Record<string, any> | null;
       switch (key) {
@@ -217,7 +217,7 @@ function CompareContent() {
                       Comparison
                     </span>
                   </th>
-                  {selectedVendors.map((v) => (
+                  {selectedVendors.map((v: any) => (
                     <th key={v.id} className="p-3 text-center">
                       <div className="clay-card p-4 relative">
                         <button
@@ -295,7 +295,7 @@ function CompareContent() {
                           </span>
                         </div>
                       </td>
-                      {selectedVendors.map((v) => (
+                      {selectedVendors.map((v: any) => (
                         <td key={v.id} className="p-3 text-center">
                           <span
                             className={cn(
@@ -326,7 +326,7 @@ function CompareContent() {
                       Actions
                     </span>
                   </td>
-                  {selectedVendors.map((v) => (
+                  {selectedVendors.map((v: any) => (
                     <td key={v.id} className="p-3 text-center">
                       <div className="flex flex-col gap-2">
                         {v.phone && (
@@ -411,7 +411,7 @@ function CompareContent() {
                     No vendors found. Try a different search.
                   </div>
                 ) : (
-                  availableVendors.slice(0, 20).map((v) => (
+                  availableVendors.slice(0, 20).map((v: any) => (
                     <button
                       key={v.id}
                       onClick={() => addVendor(v.id)}
