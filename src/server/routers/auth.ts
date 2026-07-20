@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { User } from "@/lib/models";
 import { hashPassword } from "@/lib/auth-crypto";
 import { createNotification } from "./notifications";
+import { Op } from "sequelize";
 
 export const authRouter = router({
   /**
@@ -96,6 +97,22 @@ export const authRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
+
+      // If email is being updated, verify it is not already taken by another user
+      if (input.email) {
+        const existingUser = await User.findOne({
+          where: {
+            email: input.email,
+            id: { [Op.ne]: userId },
+          },
+        });
+        if (existingUser) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "A user with this email address already exists.",
+          });
+        }
+      }
 
       const updates: any = { name: input.name };
       if (input.email !== undefined) {

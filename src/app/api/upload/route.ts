@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate a unique key
-    const ext = file.name.split(".").pop() || "jpg";
+    const rawExt = file.name.split(".").pop() || "jpg";
+    const ext = rawExt.replace(/[^a-zA-Z0-9]/g, "").slice(0, 5);
     const key = `community/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
     // Convert File to Buffer
