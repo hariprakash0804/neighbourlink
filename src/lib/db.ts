@@ -1,6 +1,7 @@
 import { Sequelize } from "sequelize";
 import mysql2 from "mysql2";
 
+// Force trigger redeployment to Vercel
 const sequelize = new Sequelize(
   process.env.DB_NAME || "neighborlink",
   process.env.DB_USER || "root",
