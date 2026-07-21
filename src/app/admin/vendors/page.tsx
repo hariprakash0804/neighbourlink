@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Eye,
   ClipboardList,
+  ArrowLeft,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { getFileUrl } from "@/lib/storage-client";
@@ -23,6 +24,14 @@ import { Map } from "@/components/map/Map";
 
 export default function AdminVendorsPage() {
   const router = useRouter();
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
 
   // Queries & Mutations
   const { data, isLoading, error, refetch } = trpc.admin.getPendingVendors.useQuery();
@@ -80,6 +89,17 @@ export default function AdminVendorsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Back button */}
+      <div className="mb-6">
+        <button
+          onClick={handleBack}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-white/5 bg-surface-secondary px-3.5 py-2 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all shadow-sm select-none"
+          title="Go Back"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back</span>
+        </button>
+      </div>
       {/* Header */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-end justify-between border-b border-white/10 pb-6 gap-6">
         <div>
@@ -104,6 +124,12 @@ export default function AdminVendorsPage() {
             className="px-4 py-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all h-9 select-none"
           >
             Moderation Queue
+          </button>
+          <button
+            onClick={() => router.push("/admin/essential")}
+            className="px-4 py-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all h-9 select-none"
+          >
+            Essential Services
           </button>
           <button
             onClick={() => router.push("/admin/audit-logs")}

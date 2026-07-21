@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Search,
   ArrowUpDown,
+  ArrowLeft,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn, formatDistance, formatPhone, telLink, shareContent } from "@/lib/utils";
@@ -360,6 +361,19 @@ function DirectoryContent() {
       {/* Search Header Bar */}
       <div className="glass-strong border-b border-white/10 p-4 shrink-0 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/");
+              }
+            }}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-secondary border border-white/5 text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors select-none"
+            title="Go Back"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
           <div
             className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0"
             style={{ backgroundColor: `${activeMeta.color}15` }}

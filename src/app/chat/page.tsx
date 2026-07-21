@@ -150,12 +150,27 @@ function ChatContent() {
           )}
         >
           {/* Header */}
-          <div className="p-4 border-b border-white/5 flex items-center justify-between">
-            <h2 className="text-base font-extrabold flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-brand-primary" />
-              <span>Inbox Messages</span>
-            </h2>
-            <span className="text-[10px] bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full font-bold select-none flex items-center gap-1">
+          <div className="p-4 border-b border-white/5 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  if (typeof window !== "undefined" && window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push("/");
+                  }
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-secondary border border-white/5 text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors select-none"
+                title="Go Back"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </button>
+              <h2 className="text-sm font-extrabold flex items-center gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5 text-brand-primary" />
+                <span>Inbox</span>
+              </h2>
+            </div>
+            <span className="text-[9px] bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full font-bold select-none flex items-center gap-1 shrink-0">
               <Clock className="h-2.5 w-2.5 animate-pulse" />
               <span>Live Polling</span>
             </span>

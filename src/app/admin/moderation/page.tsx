@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Inbox,
   Clock,
+  ArrowLeft,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,14 @@ import { cn } from "@/lib/utils";
 export default function AdminModerationPage() {
   const router = useRouter();
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
 
   // Fetch open reports
   const { data, isLoading, refetch } = trpc.report.listOpen.useQuery();
@@ -85,7 +94,16 @@ export default function AdminModerationPage() {
       {/* Hero Header */}
       <div className="relative overflow-hidden border-b border-white/5 bg-surface-secondary/20">
         <div className="absolute inset-0 bg-gradient-to-b from-destructive/5 via-transparent to-transparent pointer-events-none" />
-        <div className="max-w-5xl mx-auto px-4 py-8 relative">
+        <div className="max-w-5xl mx-auto px-4 pt-10 pb-6 relative">
+          {/* Back button */}
+          <button
+            onClick={handleBack}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-white/5 bg-surface-secondary px-3.5 py-2 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all shadow-sm select-none mb-6"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </button>
+
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-destructive/10 p-3 border border-destructive/20 text-destructive">
@@ -104,6 +122,12 @@ export default function AdminModerationPage() {
                 className="px-3 py-1.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all"
               >
                 Vendor Verification
+              </button>
+              <button
+                onClick={() => router.push("/admin/essential")}
+                className="px-3 py-1.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all"
+              >
+                Essential Services
               </button>
               <button
                 onClick={() => router.push("/admin/audit-logs")}

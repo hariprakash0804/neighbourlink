@@ -12,13 +12,24 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
+  ArrowLeft,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 
 export default function AdminAuditLogsPage() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
 
   // Fetch audit logs
   const { data, isLoading } = trpc.admin.auditLogList.useQuery({
@@ -68,16 +79,48 @@ export default function AdminAuditLogsPage() {
       {/* Hero Header */}
       <div className="relative overflow-hidden border-b border-white/5 bg-surface-secondary/20">
         <div className="absolute inset-0 bg-gradient-to-b from-brand-primary/5 via-transparent to-transparent pointer-events-none" />
-        <div className="max-w-4xl mx-auto px-4 py-8 relative">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-brand-primary/10 p-3 border border-brand-primary/20 text-brand-primary">
-              <List className="h-6 w-6" />
+        <div className="max-w-4xl mx-auto px-4 pt-10 pb-6 relative">
+          {/* Back button */}
+          <button
+            onClick={handleBack}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-white/5 bg-surface-secondary px-3.5 py-2 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all shadow-sm select-none mb-6"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </button>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-brand-primary/10 p-3 border border-brand-primary/20 text-brand-primary">
+                <List className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-black tracking-tight leading-tight">System Audit Logs</h1>
+                <p className="text-xs text-text-secondary mt-1">
+                  Chronological record of administrative operations, moderation resolutions, and promotions
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tight leading-tight">System Audit Logs</h1>
-              <p className="text-xs text-text-secondary mt-1">
-                Chronological record of administrative operations, moderation resolutions, and promotions
-              </p>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => router.push("/admin/vendors")}
+                className="px-3 py-1.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all"
+              >
+                Verification Queue
+              </button>
+              <button
+                onClick={() => router.push("/admin/moderation")}
+                className="px-3 py-1.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all"
+              >
+                Moderation Queue
+              </button>
+              <button
+                onClick={() => router.push("/admin/essential")}
+                className="px-3 py-1.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-text-primary transition-all"
+              >
+                Essential Services
+              </button>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { router, adminProcedure } from "../trpc";
 import { z } from "zod";
-import { Vendor, User, AuditLog } from "@/lib/models";
+import { Vendor, User, AuditLog, EssentialService } from "@/lib/models";
 import { indexVendors } from "@/lib/meilisearch";
 import { TRPCError } from "@trpc/server";
 import { createNotification } from "./notifications";
@@ -187,5 +187,141 @@ export const adminRouter = router({
         })),
         total: count,
       };
+    }),
+
+  /**
+   * Create a new Essential Service
+   */
+  createEssentialService: adminProcedure
+    .input(
+      z.object({
+        category: z.enum(["HOSPITAL", "PHARMACY", "POLICE", "FIRE", "ENTERTAINMENT", "SCHOOL", "ATM", "BANK"]),
+        name: z.string().min(2),
+        lat: z.number(),
+        lng: z.number(),
+        phone: z.string().min(5),
+        is24x7: z.boolean().default(false),
+        isGovtSource: z.boolean().default(false),
+        metadata: z.record(z.string(), z.any()).optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const actorId = ctx.session.userId;
+      const service = await EssentialService.create({
+        category: input.category,
+        name: input.name,
+        lat: input.lat,
+        lng: input.lng,
+        phone: input.phone,
+        is24x7: input.is24x7,
+        isGovtSource: input.isGovtSource,
+        metadata: input.metadata || {},
+      });
+
+      await AuditLog.create({
+        actorId,
+        action: "CREATE_ESSENTIAL_SERVICE",
+        targetId: service.id,
+        metadata: { name: service.name, category: service.category } as any,
+      });
+
+      return { success: true, service };
+    }),
+
+  /**
+   * Delete an Essential Service
+   */
+  deleteEssentialService: adminProcedure
+    .input(z.object({ serviceId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const actorId = ctx.session.userId;
+      const service = await EssentialService.findByPk(input.serviceId);
+      if (!service) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Essential Service not found" });
+      }
+
+      await service.destroy();
+
+      await AuditLog.create({
+        actorId,
+        action: "DELETE_ESSENTIAL_SERVICE",
+        targetId: input.serviceId,
+        metadata: { name: service.name, category: service.category } as any,
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * List all Essential Services (Admin overview)
+   */
+  listAllEssentialServices: adminProcedure.query(async () => {
+    const services = await EssentialService.findAll({
+      order: [
+        ["category", "ASC"],
+        ["name", "ASC"],
+      ],
+    });
+
+    return {
+      services: services.map((s) => ({
+        id: s.id,
+        category: s.category,
+        name: s.name,
+        lat: s.lat,
+        lng: s.lng,
+        phone: s.phone,
+        is24x7: s.is24x7,
+        isGovtSource: s.isGovtSource,
+        metadata: s.metadata as any,
+        createdAt: s.createdAt.toISOString(),
+      })),
+    };
+  }),
+
+  /**
+   * Bulk Create Essential Services (Import from Excel/CSV)
+   */
+  bulkCreateEssentialServices: adminProcedure
+    .input(
+      z.object({
+        services: z.array(
+          z.object({
+            category: z.enum(["HOSPITAL", "PHARMACY", "POLICE", "FIRE", "ENTERTAINMENT", "SCHOOL", "ATM", "BANK"]),
+            name: z.string().min(2),
+            lat: z.number(),
+            lng: z.number(),
+            phone: z.string().min(5),
+            is24x7: z.boolean().default(false),
+            isGovtSource: z.boolean().default(false),
+            metadata: z.record(z.string(), z.any()).optional(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const actorId = ctx.session.userId;
+
+      const createdServices = await EssentialService.bulkCreate(
+        input.services.map((s) => ({
+          category: s.category,
+          name: s.name,
+          lat: s.lat,
+          lng: s.lng,
+          phone: s.phone,
+          is24x7: s.is24x7,
+          isGovtSource: s.isGovtSource,
+          metadata: s.metadata || {},
+        }))
+      );
+
+      await AuditLog.create({
+        actorId,
+        action: "BULK_CREATE_ESSENTIAL_SERVICES",
+        targetId: null,
+        metadata: { count: createdServices.length } as any,
+      });
+
+      return { success: true, count: createdServices.length };
     }),
 });

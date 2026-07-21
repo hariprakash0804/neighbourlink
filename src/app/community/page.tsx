@@ -22,15 +22,18 @@ import {
   Briefcase,
   PhoneCall,
   DollarSign,
+  ArrowLeft,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn, timeAgo, shareContent } from "@/lib/utils";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useRouter } from "next/navigation";
 
 type ActiveTab = "bulletin" | "civic" | "events" | "carpool" | "jobs";
 
 export default function CommunityHubPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<ActiveTab>("bulletin");
@@ -366,22 +369,38 @@ export default function CommunityHubPage() {
       {/* Header Banner */}
       <div className="relative overflow-hidden border-b border-white/5 bg-surface-secondary/20">
         <div className="absolute inset-0 bg-gradient-to-b from-brand-primary/5 via-transparent to-transparent pointer-events-none" />
-        <div className="max-w-4xl mx-auto px-4 py-8 relative flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-black tracking-tight leading-tight flex flex-wrap items-center gap-2">
-              <Megaphone className="h-6 w-6 text-brand-primary" />
-              <span>Community Hub</span>
-              {userLocation.locality && (
-                <span className="text-[10px] uppercase font-black tracking-wider text-brand-primary/80 bg-brand-primary/10 border border-brand-primary/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {userLocation.locality}
-                </span>
-              )}
-            </h1>
-            <p className="text-xs text-text-secondary mt-1">
-              Join neighbor bulletin boards, report local civic issues, share rides, find local jobs, or coordinate upcoming community events.
-            </p>
-          </div>
+        <div className="max-w-4xl mx-auto px-4 pt-10 pb-6 relative">
+          {/* Back button */}
+          <button
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/");
+              }
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-white/5 bg-surface-secondary px-3.5 py-2 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all shadow-sm select-none mb-6"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </button>
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-black tracking-tight leading-tight flex flex-wrap items-center gap-2">
+                <Megaphone className="h-6 w-6 text-brand-primary" />
+                <span>Community Hub</span>
+                {userLocation.locality && (
+                  <span className="text-[10px] uppercase font-black tracking-wider text-brand-primary/80 bg-brand-primary/10 border border-brand-primary/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {userLocation.locality}
+                  </span>
+                )}
+              </h1>
+              <p className="text-xs text-text-secondary mt-1">
+                Join neighbor bulletin boards, report local civic issues, share rides, find local jobs, or coordinate upcoming community events.
+              </p>
+            </div>
           <button
             onClick={() => {
               if (!session?.user) {
@@ -397,6 +416,7 @@ export default function CommunityHubPage() {
           </button>
         </div>
       </div>
+    </div>
 
       {/* Tabs Selector */}
       <div className="max-w-4xl mx-auto px-4 mt-6">

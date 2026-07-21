@@ -12,6 +12,7 @@ import {
   AlertCircle,
   HelpCircle,
   ArrowRight,
+  ArrowLeft,
   Sparkles,
   Star,
   Send,
@@ -25,6 +26,14 @@ type TabType = "all" | "PENDING" | "ACCEPTED" | "COMPLETED_DECLINED";
 export default function ResidentBookingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("all");
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
 
   const { data: data, isLoading, refetch } = trpc.booking.listForResident.useQuery();
   const updateBookingStatus = trpc.booking.updateStatus.useMutation();
@@ -128,9 +137,18 @@ export default function ResidentBookingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-primary text-text-primary px-4 md:px-8 py-10 max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-surface-primary text-text-primary px-4 md:px-8 py-10 max-w-5xl mx-auto space-y-6">
+      {/* Back button */}
+      <button
+        onClick={handleBack}
+        className="inline-flex items-center gap-1.5 rounded-xl border border-white/5 bg-surface-secondary px-3.5 py-2 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all shadow-sm select-none mt-12"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span>Back</span>
+      </button>
+
       {/* Page Header */}
-      <div className="space-y-2 mt-12">
+      <div className="space-y-2">
         <div className="flex items-center gap-2 text-xs font-semibold text-brand-primary uppercase tracking-wider">
           <Sparkles className="h-4 w-4" />
           <span>My Dashboard</span>

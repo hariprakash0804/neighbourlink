@@ -15,6 +15,7 @@ import {
   Sparkles,
   ClipboardList,
   ArrowRight,
+  ArrowLeft,
   TrendingUp,
   Star,
   ShieldCheck,
@@ -32,6 +33,14 @@ export default function VendorDashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("PENDING");
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
 
   // New Deal Form States
   const [dealTitle, setDealTitle] = useState("");
@@ -135,7 +144,18 @@ export default function VendorDashboardPage() {
 
   if (isForbidden) {
     return (
-      <div className="min-h-screen bg-surface-primary text-text-primary flex items-center justify-center px-4">
+      <div className="min-h-screen bg-surface-primary text-text-primary flex flex-col items-center justify-center px-4">
+        {/* Back button */}
+        <div className="max-w-md w-full mb-6">
+          <button
+            onClick={handleBack}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-white/5 bg-surface-secondary px-3.5 py-2 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all shadow-sm select-none"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </button>
+        </div>
+
         <div className="clay-card p-8 text-center max-w-md w-full space-y-6 border border-white/5">
           <div className="rounded-full bg-brand-primary/10 p-5 border border-brand-primary/20 text-brand-primary w-fit mx-auto animate-pulse">
             <ClipboardList className="h-10 w-10" />
@@ -219,9 +239,18 @@ export default function VendorDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-primary text-text-primary px-4 md:px-8 py-10 max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-surface-primary text-text-primary px-4 md:px-8 py-10 max-w-5xl mx-auto space-y-6">
+      {/* Back button */}
+      <button
+        onClick={handleBack}
+        className="inline-flex items-center gap-1.5 rounded-xl border border-white/5 bg-surface-secondary px-3.5 py-2 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all shadow-sm select-none mt-12"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span>Back</span>
+      </button>
+
       {/* Dashboard Header */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mt-12">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs font-semibold text-brand-primary uppercase tracking-wider">
             <Sparkles className="h-4 w-4" />
