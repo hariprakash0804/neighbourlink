@@ -147,20 +147,44 @@ function DirectoryContent() {
     enabled: !!session?.user,
   });
 
+  // Listen for global location changes
   useEffect(() => {
-    if (addresses && addresses.length > 0) {
-      setCenterLoc({
-        lat: addresses[0].lat,
-        lng: addresses[0].lng,
-        locality: addresses[0].label,
-      });
-    } else {
-      setCenterLoc({
-        lat: 12.9716,
-        lng: 77.5946,
-        locality: "Bangalore",
-      });
-    }
+    const updateLoc = () => {
+      const saved = localStorage.getItem("active_location");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setCenterLoc({
+            lat: parsed.lat,
+            lng: parsed.lng,
+            locality: parsed.locality,
+          });
+          return;
+        } catch (e) {
+          console.error("Failed to parse active_location in directory page:", e);
+        }
+      }
+
+      // Fallback: If no local storage active location exists, use first saved address or Bangalore
+      if (addresses && addresses.length > 0) {
+        setCenterLoc({
+          lat: addresses[0].lat,
+          lng: addresses[0].lng,
+          locality: addresses[0].label,
+        });
+      } else {
+        setCenterLoc({
+          lat: 12.9716,
+          lng: 77.5946,
+          locality: "Bangalore",
+        });
+      }
+    };
+
+    window.addEventListener("active_location_changed", updateLoc);
+    updateLoc(); // Initial call
+
+    return () => window.removeEventListener("active_location_changed", updateLoc);
   }, [addresses]);
 
   // Determine if active category is an Essential Service or local Vendor

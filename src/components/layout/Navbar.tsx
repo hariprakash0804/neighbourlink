@@ -48,6 +48,7 @@ export function Navbar() {
     pincode: string;
   } | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [hasPromptedLocation, setHasPromptedLocation] = useState(false);
 
   const isAuthenticated = status === "authenticated" && session?.user;
 
@@ -56,6 +57,68 @@ export function Navbar() {
     enabled: !!isAuthenticated,
     refetchInterval: 15000, // Refetch every 15 seconds to stay updated
   });
+
+  // Load user's default saved address if authenticated
+  const { data: addresses, isSuccess: isAddressesLoaded } = trpc.location.getAddresses.useQuery(undefined, {
+    enabled: !!isAuthenticated,
+  });
+
+  // Listen for global location changes
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const saved = localStorage.getItem("active_location");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setCurrentLocation({
+            locality: parsed.locality,
+            pincode: parsed.pincode || "",
+          });
+        } catch (e) {
+          console.error("Failed to parse active_location:", e);
+        }
+      } else {
+        setCurrentLocation(null);
+      }
+    };
+
+    window.addEventListener("active_location_changed", handleLocationChange);
+    handleLocationChange(); // Run initial check on mount
+
+    return () => window.removeEventListener("active_location_changed", handleLocationChange);
+  }, []);
+
+  // Sync saved addresses from DB to active_location in localStorage
+  useEffect(() => {
+    if (!isAuthenticated) {
+      localStorage.removeItem("active_location");
+      window.dispatchEvent(new Event("active_location_changed"));
+      setHasPromptedLocation(false);
+      return;
+    }
+
+    if (isAddressesLoaded && addresses) {
+      const saved = localStorage.getItem("active_location");
+      if (addresses.length > 0) {
+        if (!saved) {
+          // If no active location stored in local storage, use the first saved address
+          const latestAddr = addresses[0];
+          const newLoc = {
+            lat: latestAddr.lat,
+            lng: latestAddr.lng,
+            locality: latestAddr.label,
+            pincode: latestAddr.pincode || "",
+          };
+          localStorage.setItem("active_location", JSON.stringify(newLoc));
+          window.dispatchEvent(new Event("active_location_changed"));
+        }
+      } else if (!saved && !hasPromptedLocation) {
+        // Prompt only if guest/user has NO saved addresses and NO local storage location set
+        setHasPromptedLocation(true);
+        setIsLocationModalOpen(true);
+      }
+    }
+  }, [isAuthenticated, isAddressesLoaded, addresses, hasPromptedLocation]);
 
   // Refs for click-outside detection
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -619,10 +682,6 @@ export function Navbar() {
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={() => {
           setIsAuthModalOpen(false);
-          // Open location modal after sign in if no location set
-          if (!currentLocation) {
-            setTimeout(() => setIsLocationModalOpen(true), 500);
-          }
         }}
       />
 
@@ -631,7 +690,14 @@ export function Navbar() {
         isOpen={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
         onLocationSet={(loc) => {
-          setCurrentLocation({ locality: loc.locality, pincode: loc.pincode });
+          const newLoc = {
+            lat: loc.lat,
+            lng: loc.lng,
+            locality: loc.locality,
+            pincode: loc.pincode || "",
+          };
+          localStorage.setItem("active_location", JSON.stringify(newLoc));
+          window.dispatchEvent(new Event("active_location_changed"));
         }}
       />
 
