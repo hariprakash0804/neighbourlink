@@ -100,7 +100,27 @@ export function Navbar() {
     if (isAddressesLoaded && addresses) {
       const saved = localStorage.getItem("active_location");
       if (addresses.length > 0) {
-        if (!saved) {
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            // Verify if the currently selected active location matches one of the saved addresses.
+            // If they deleted/renamed it in their profile, sync/fallback to the latest address.
+            const exists = addresses.some((a) => a.label === parsed.locality);
+            if (!exists) {
+              const latestAddr = addresses[0];
+              const newLoc = {
+                lat: latestAddr.lat,
+                lng: latestAddr.lng,
+                locality: latestAddr.label,
+                pincode: latestAddr.pincode || "",
+              };
+              localStorage.setItem("active_location", JSON.stringify(newLoc));
+              window.dispatchEvent(new Event("active_location_changed"));
+            }
+          } catch (e) {
+            console.error("Failed to verify active location matches saved addresses:", e);
+          }
+        } else {
           // If no active location stored in local storage, use the first saved address
           const latestAddr = addresses[0];
           const newLoc = {
