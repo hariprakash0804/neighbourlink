@@ -139,8 +139,8 @@ function ChatContent() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-primary text-text-primary flex" style={{ paddingTop: 'var(--app-nav-height)' }}>
-      <div className="w-full max-w-6xl mx-auto flex h-[calc(100vh-4rem)] border border-white/5 bg-surface-secondary/20 backdrop-blur-md overflow-hidden rounded-2xl my-4">
+    <div className="min-h-screen bg-surface-primary text-text-primary flex pb-safe" style={{ paddingTop: 'var(--app-nav-height)' }}>
+      <div className="w-full max-w-6xl mx-auto flex h-[calc(100vh-var(--app-nav-height)-var(--app-mobile-nav-height)-1rem)] md:h-[calc(100vh-5rem)] border border-white/5 bg-surface-secondary/20 backdrop-blur-md overflow-hidden rounded-2xl my-2 md:my-4">
         
         {/* Left Side: Conversations List */}
         <div

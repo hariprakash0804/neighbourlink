@@ -639,10 +639,10 @@ function DirectoryContent() {
       </div>
 
       {/* Mobile Toggle Button */}
-      <div className="lg:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999]">
+      <div className="lg:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] mb-safe">
         <button
           onClick={() => setMobileView(mobileView === "list" ? "map" : "list")}
-          className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-primary to-brand-accent px-5 py-3 text-sm font-semibold text-white shadow-elevated border border-white/20 select-none"
+          className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-primary to-brand-accent px-5 py-3 text-sm font-semibold text-white shadow-elevated border border-white/20 select-none touch-target"
         >
           {mobileView === "list" ? (
             <>
@@ -668,12 +668,12 @@ function DirectoryContent() {
       {/* Booking Overlay Modal */}
       <AnimatePresence>
         {bookingVendor && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center max-sm:items-end bg-black/60 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="clay-card p-6 w-full max-w-md mx-4 relative overflow-hidden text-text-primary border border-white/10"
+              className="clay-card p-6 w-full max-w-md mx-4 max-sm:mx-0 max-sm:w-full mobile-sheet-dialog relative overflow-hidden text-text-primary border border-white/10"
             >
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-primary to-brand-accent"></div>
               

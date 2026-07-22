@@ -238,7 +238,7 @@ export function LocationModal({ isOpen, onClose, onLocationSet }: LocationModalP
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="fixed inset-x-4 top-[10%] z-[101] mx-auto max-w-lg rounded-3xl glass-strong shadow-elevated p-6 max-h-[80vh] overflow-y-auto"
+            className="fixed inset-x-4 max-sm:inset-x-0 top-[10%] max-sm:top-auto max-sm:bottom-0 max-sm:max-h-[90vh] max-sm:rounded-b-none z-[101] mx-auto max-w-lg rounded-3xl glass-strong shadow-elevated p-6 max-sm:p-5 overflow-y-auto mobile-sheet-dialog"
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-5">

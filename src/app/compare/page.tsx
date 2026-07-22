@@ -372,12 +372,12 @@ function CompareContent() {
       {/* Add Vendor Search Modal */}
       <AnimatePresence>
         {isSearchOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center max-sm:items-end bg-black/60 backdrop-blur-sm p-4 max-sm:p-0">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="clay-card p-6 border border-white/10 max-w-md w-full max-h-[70vh] flex flex-col"
+              className="clay-card p-6 border border-white/10 max-w-md w-full max-sm:max-w-none mobile-sheet-dialog max-h-[70vh] max-sm:max-h-[85vh] flex flex-col"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold">Add Vendor to Compare</h3>

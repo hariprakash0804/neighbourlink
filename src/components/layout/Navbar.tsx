@@ -583,115 +583,128 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu — Slide down */}
+        {/* Mobile Menu — Slide down with backdrop */}
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="md:hidden overflow-hidden border-t border-white/10"
-            >
-              <div className="px-4 py-4 space-y-3">
-                {/* Mobile Search */}
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleSearchKeyDown}
-                    placeholder="Search services, vendors..."
-                    className="w-full rounded-xl py-3 pl-10 pr-4 text-sm glass focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
-                    aria-label="Search services and vendors"
-                  />
-                </div>
-
-                {/* Mobile Navigation Links */}
-                <div className="flex flex-col gap-1">
-                  {[
-                    { href: "/directory", icon: Search, label: "Directory" },
-                    { href: "/community", icon: MessageSquare, label: "Community Hub" },
-                    { href: "/compare", icon: Settings, label: "Compare Vendors" },
-                    { href: "/about", icon: User, label: "About" },
-                  ].map((link) => {
-                    const LinkIcon = link.icon;
-                    const isActive = pathname === link.href;
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
-                          isActive
-                            ? "text-brand-primary bg-brand-primary/5 font-bold"
-                            : "text-text-secondary hover:bg-white/5"
-                        )}
-                      >
-                        <LinkIcon className={cn("h-4 w-4", isActive ? "text-brand-primary" : "text-brand-primary")} />
-                        {link.label}
-                        {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-primary" />}
-                      </Link>
-                    );
-                  })}
-                </div>
-
-                {/* Mobile Location */}
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    if (isAuthenticated) {
-                      setIsLocationModalOpen(true);
-                    } else {
-                      setIsAuthModalOpen(true);
-                    }
-                  }}
-                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 glass"
-                >
-                  <MapPin className="h-4 w-4 text-brand-primary" />
-                  <span className="text-sm">
-                    {currentLocation ? currentLocation.locality : "Select Location"}
-                  </span>
-                </button>
-
-                {/* Mobile Auth */}
-                {isAuthenticated ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl glass">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-primary to-brand-accent text-white text-xs font-bold">
-                        {session.user.name
-                          ? session.user.name.charAt(0).toUpperCase()
-                          : "U"}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">{session.user.name || "User"}</p>
-                        <p className="text-xs text-text-muted">{session.user.phone}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => signOut()}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-danger/30 px-5 py-3 text-sm font-medium text-danger"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span>Sign Out</span>
-                    </button>
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="fixed inset-0 top-[var(--app-nav-height)] z-[1000] bg-black/40 backdrop-blur-xs md:hidden"
+              />
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="relative z-[1001] md:hidden overflow-y-auto max-h-[calc(100vh-80px)] border-t border-white/10 glass-strong shadow-xl"
+              >
+                <div className="px-4 py-4 space-y-3 pb-8">
+                  {/* Mobile Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="Search services, vendors..."
+                      className="w-full rounded-xl py-3 pl-10 pr-4 text-sm glass focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+                      aria-label="Search services and vendors"
+                    />
                   </div>
-                ) : (
+
+                  {/* Mobile Navigation Links */}
+                  <div className="flex flex-col gap-1">
+                    {[
+                      { href: "/directory", icon: Search, label: "Directory" },
+                      { href: "/community", icon: MessageSquare, label: "Community Hub" },
+                      { href: "/compare", icon: Settings, label: "Compare Vendors" },
+                      { href: "/about", icon: User, label: "About" },
+                    ].map((link) => {
+                      const LinkIcon = link.icon;
+                      const isActive = pathname === link.href;
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors touch-target",
+                            isActive
+                              ? "text-brand-primary bg-brand-primary/5 font-bold"
+                              : "text-text-secondary hover:bg-white/5"
+                          )}
+                        >
+                          <LinkIcon className={cn("h-4 w-4", isActive ? "text-brand-primary" : "text-brand-primary")} />
+                          {link.label}
+                          {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-primary" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  {/* Mobile Location */}
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      setIsAuthModalOpen(true);
+                      if (isAuthenticated) {
+                        setIsLocationModalOpen(true);
+                      } else {
+                        setIsAuthModalOpen(true);
+                      }
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-primary to-brand-accent px-5 py-3 text-sm font-semibold text-white"
+                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3 glass touch-target"
                   >
-                    <LogIn className="h-4 w-4" />
-                    <span>Sign In</span>
+                    <MapPin className="h-4 w-4 text-brand-primary" />
+                    <span className="text-sm">
+                      {currentLocation ? currentLocation.locality : "Select Location"}
+                    </span>
                   </button>
-                )}
-              </div>
-            </motion.div>
+
+                  {/* Mobile Auth */}
+                  {isAuthenticated ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 px-4 py-2 rounded-xl glass">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-primary to-brand-accent text-white text-xs font-bold">
+                          {session.user.name
+                            ? session.user.name.charAt(0).toUpperCase()
+                            : "U"}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{session.user.name || "User"}</p>
+                          <p className="text-xs text-text-muted">{session.user.phone}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          signOut();
+                        }}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-danger/30 px-5 py-3 text-sm font-medium text-danger touch-target"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-primary to-brand-accent px-5 py-3 text-sm font-semibold text-white touch-target"
+                    >
+                      <LogIn className="h-4 w-4" />
+                      <span>Sign In</span>
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </header>

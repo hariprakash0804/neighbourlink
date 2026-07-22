@@ -156,7 +156,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="fixed inset-x-4 top-[10%] md:top-[15%] z-[101] mx-auto max-w-md rounded-3xl clay-card border border-white/10 shadow-elevated p-8 text-text-primary"
+            className="fixed inset-x-4 max-sm:inset-x-0 top-[10%] md:top-[15%] max-sm:top-auto max-sm:bottom-0 max-sm:max-h-[92vh] max-sm:overflow-y-auto max-sm:rounded-b-none z-[101] mx-auto max-w-md rounded-3xl clay-card border border-white/10 shadow-elevated p-8 max-sm:p-6 text-text-primary"
           >
             {/* Close Button */}
             <button

@@ -1077,3 +1077,63 @@ textarea:focus-visible {
   }
 }
 
+/* ─── Mobile Optimizations & Touch Accessibility ────────────────────────────── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: calc(var(--app-mobile-nav-height) + env(safe-area-inset-bottom));
+  }
+  .mb-safe {
+    margin-bottom: calc(var(--app-mobile-nav-height) + env(safe-area-inset-bottom));
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Eliminate double-tap zoom delay on buttons and links */
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch-friendly target minimums for small screens */
+@media (max-width: 639px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Horizontal swipe containers for mobile */
+  .mobile-scroll-row {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .mobile-scroll-row::-webkit-scrollbar {
+    display: none;
+  }
+  .mobile-scroll-row > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+
+  /* Bottom sheet modal styling for mobile screens */
+  .mobile-sheet-dialog {
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 1.5rem !important;
+    border-top-right-radius: 1.5rem !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+}
+
+

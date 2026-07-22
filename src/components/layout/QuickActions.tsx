@@ -92,7 +92,7 @@ export function QuickActions() {
       </AnimatePresence>
 
       {/* FAB Container */}
-      <div className="fixed bottom-28 right-4 z-50 lg:hidden flex flex-col-reverse items-end gap-3">
+      <div className="fixed bottom-24 right-4 z-50 lg:hidden flex flex-col-reverse items-end gap-3 mb-safe">
         {/* Action Items */}
         <AnimatePresence>
           {isOpen &&
