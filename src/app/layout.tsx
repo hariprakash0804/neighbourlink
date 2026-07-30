@@ -45,11 +45,11 @@ export const metadata: Metadata = {
   ],
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico" },
+      { url: "/icon.svg?v=2", type: "image/svg+xml" },
+      { url: "/favicon.ico?v=2" },
     ],
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    shortcut: "/icon.svg?v=2",
+    apple: "/icon.svg?v=2",
   },
   openGraph: {
     title: "NeighborLink — Your Neighborhood, Connected",
