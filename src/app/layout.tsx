@@ -43,7 +43,14 @@ export const metadata: Metadata = {
     "hyperlocal",
     "community",
   ],
-  authors: [{ name: "NeighborLink" }],
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
   openGraph: {
     title: "NeighborLink — Your Neighborhood, Connected",
     description: "Find trusted local services, vendors, and everything your community needs.",
