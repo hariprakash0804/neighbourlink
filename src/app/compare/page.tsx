@@ -207,8 +207,8 @@ function CompareContent() {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
+          <div className="mobile-tab-scroll w-full pb-2">
+            <table className="w-full min-w-[550px]">
               {/* Vendor Headers */}
               <thead>
                 <tr>

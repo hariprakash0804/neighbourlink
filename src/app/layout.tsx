@@ -88,7 +88,7 @@ export default function RootLayout({
           <ThemeProvider>
             <TRPCProvider>
               <ToastProvider>
-                <div className="flex min-h-screen flex-col">
+                <div className="flex min-h-screen flex-col overflow-x-hidden w-full max-w-full">
                   {/* Top navigation — glassmorphism */}
                   <Navbar />
 

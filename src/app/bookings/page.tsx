@@ -165,7 +165,7 @@ export default function ResidentBookingsPage() {
       </div>
 
       {/* Tabs list */}
-      <div className="flex border-b border-white/5 gap-1.5 overflow-x-auto pb-1">
+      <div className="mobile-tab-scroll border-b border-white/5 gap-1.5 pb-1">
         {(
           [
             { id: "all", label: "All Bookings" },

@@ -383,12 +383,12 @@ export default function HomePage() {
             </motion.div>
 
             {/* Quick Search Chips */}
-            <motion.div variants={itemVariants} className="mt-6 flex flex-wrap gap-2">
+            <motion.div variants={itemVariants} className="mt-6 mobile-tab-scroll sm:flex-wrap gap-2 pb-1">
               {QUICK_CHIPS.map((chip) => (
                 <button
                   key={chip.query}
                   onClick={() => router.push(`/directory?category=${chip.query}`)}
-                  className="rounded-full glass px-3.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-white/10 transition-all hover:scale-105 active:scale-95"
+                  className="rounded-full glass px-3.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-white/10 transition-all hover:scale-105 active:scale-95 shrink-0"
                 >
                   {chip.label}
                 </button>
@@ -402,7 +402,7 @@ export default function HomePage() {
                   <History className="h-3.5 w-3.5 text-text-muted" />
                   <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Recently Viewed</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="mobile-tab-scroll gap-2 pb-1">
                   {recentMeta.map((cat) => {
                     const CatIcon = cat.icon;
                     return (

@@ -420,7 +420,7 @@ export default function CommunityHubPage() {
 
       {/* Tabs Selector */}
       <div className="max-w-4xl mx-auto px-4 mt-6">
-        <div className="flex flex-wrap gap-1 p-1 glass rounded-xl w-fit">
+        <div className="mobile-tab-scroll gap-1 p-1 glass rounded-xl w-full sm:w-fit max-w-full">
           <button
             onClick={() => setActiveTab("bulletin")}
             className={cn(
