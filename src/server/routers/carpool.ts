@@ -2,7 +2,7 @@ import { router, protectedProcedure, publicProcedure } from "../trpc";
 import { z } from "zod";
 import { Carpool, User } from "@/lib/models";
 import { TRPCError } from "@trpc/server";
-import { haversineDistance } from "@/lib/utils";
+import { haversineDistance, maskPhone } from "@/lib/utils";
 import { containsProfanityOrSpam } from "@/lib/moderation";
 
 export const carpoolRouter = router({
@@ -62,7 +62,7 @@ export const carpoolRouter = router({
         radius: z.number().min(500).max(20000).default(5000), // in meters
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       // Find all rides that are scheduled for the future
       const allCarpools = await Carpool.findAll({
         include: [
@@ -74,6 +74,11 @@ export const carpoolRouter = router({
       const nearbyCarpools = allCarpools
         .map((c) => {
           const dist = haversineDistance(input.lat, input.lng, c.lat, c.lng);
+          const rawPhone = c.driver?.phone || "";
+          const driverPhone = ctx.session
+            ? rawPhone
+            : maskPhone(rawPhone) || "";
+
           return {
             id: c.id,
             userId: c.userId,
@@ -87,7 +92,7 @@ export const carpoolRouter = router({
             notes: c.notes,
             createdAt: c.createdAt.toISOString(),
             driverName: c.driver?.name || "Driver",
-            driverPhone: c.driver?.phone || "",
+            driverPhone,
             distanceM: Math.round(dist),
           };
         })

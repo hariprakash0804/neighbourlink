@@ -6,6 +6,11 @@ import L from "leaflet";
 
 // Fix Leaflet marker icon issues (SVG-based markers instead of PNGs to match morphism)
 const createCustomIcon = (color: string, isCenter: boolean = false) => {
+  // Sanitize color to allow only safe CSS color formats
+  const safeColor = /^#[0-9a-fA-F]{3,8}$|^rgb\([\d\s,.]+\)$|^rgba\([\d\s,.]+\)$|^[a-zA-Z]{3,20}$/.test(color.trim())
+    ? color.trim()
+    : "#6366f1";
+
   return L.divIcon({
     html: `
       <div class="relative flex items-center justify-center">
@@ -18,7 +23,7 @@ const createCustomIcon = (color: string, isCenter: boolean = false) => {
           </div>
         `
             : `
-          <div class="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white shadow-md transition-all hover:scale-110" style="background-color: ${color};">
+          <div class="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white shadow-md transition-all hover:scale-110" style="background-color: ${safeColor};">
             <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />

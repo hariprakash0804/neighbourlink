@@ -74,8 +74,10 @@ export const vendorRouter = router({
         });
       }
 
-      // Upgrade user role to VENDOR
-      await User.update({ role: "VENDOR" }, { where: { id: userId } });
+      // Upgrade user role to VENDOR if not already an ADMIN
+      if (ctx.session.role !== "ADMIN") {
+        await User.update({ role: "VENDOR" }, { where: { id: userId } });
+      }
 
       // Create vendor profile
       const vendor = await Vendor.create({

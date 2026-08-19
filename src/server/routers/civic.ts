@@ -102,10 +102,18 @@ export const civicRouter = router({
         status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED"]),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const report = await CivicReport.findByPk(input.reportId);
       if (!report) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Civic report not found" });
+      }
+
+      // Authorization check: only the reporter or an ADMIN can update report status
+      if (report.userId !== ctx.session.userId && ctx.session.role !== "ADMIN") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not authorized to update this civic report.",
+        });
       }
 
       await report.update({ status: input.status });

@@ -58,6 +58,21 @@ export function formatPhone(phone: string): string {
 }
 
 /**
+ * Mask phone number for privacy / anti-scraping
+ * e.g., "+91 98765 43210" -> "+91 98*** **210"
+ */
+export function maskPhone(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const cleaned = phone.replace(/\D/g, "");
+  if (cleaned.length >= 10) {
+    const start = cleaned.slice(0, 2);
+    const end = cleaned.slice(-3);
+    return `+91 ${start}*** **${end}`;
+  }
+  return `${phone.slice(0, 2)}****${phone.slice(-2)}`;
+}
+
+/**
  * Generate WhatsApp deep link with prefilled message
  */
 export function whatsappLink(phone: string, message?: string): string {

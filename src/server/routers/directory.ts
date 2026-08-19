@@ -1,7 +1,7 @@
 import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { EssentialService, User, Vendor, VENDOR_CATEGORIES, ESSENTIAL_CATEGORIES } from "@/lib/models";
-import { haversineDistance } from "@/lib/utils";
+import { haversineDistance, maskPhone } from "@/lib/utils";
 import { Op } from "sequelize";
 import { getMeiliClient } from "@/lib/meilisearch";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -235,6 +235,11 @@ export const directoryRouter = router({
 
               const distance = haversineDistance(lat, lng, dbVendor.lat, dbVendor.lng);
 
+              const rawPhone = dbVendor.user?.phone || null;
+              const phone = (ctx.session?.userId === dbVendor.userId || ctx.session?.role === "ADMIN")
+                ? rawPhone
+                : maskPhone(rawPhone);
+
               return {
                 id: dbVendor.id,
                 userId: dbVendor.userId,
@@ -250,7 +255,7 @@ export const directoryRouter = router({
                 ratingAvg: dbVendor.ratingAvg,
                 ratingCount: dbVendor.ratingCount,
                 responseTimeMin: dbVendor.responseTimeMin,
-                phone: dbVendor.user?.phone || null,
+                phone,
                 distance,
               };
             })
@@ -316,6 +321,11 @@ export const directoryRouter = router({
       const vendorsWithDistance = dbVendors
         .map((v) => {
           const distance = haversineDistance(lat, lng, v.lat, v.lng);
+          const rawPhone = v.user?.phone || null;
+          const phone = (ctx.session?.userId === v.userId || ctx.session?.role === "ADMIN")
+            ? rawPhone
+            : maskPhone(rawPhone);
+
           return {
             id: v.id,
             userId: v.userId,
@@ -331,7 +341,7 @@ export const directoryRouter = router({
             ratingAvg: v.ratingAvg,
             ratingCount: v.ratingCount,
             responseTimeMin: v.responseTimeMin,
-            phone: v.user?.phone || null,
+            phone,
             distance,
           };
         })
@@ -363,11 +373,7 @@ export const directoryRouter = router({
    */
   getVendorById: publicProcedure
     .input(z.object({ vendorId: z.string() }))
-    .query(async ({ input }) => {
-      const cacheKey = `cache:vendor:id:${input.vendorId}`;
-      const cached = await getCache<any>(cacheKey);
-      if (cached) return { vendor: cached };
-
+    .query(async ({ input, ctx }) => {
       const vendor = await Vendor.findByPk(input.vendorId, {
         include: [{ model: User, as: "user", attributes: ["phone", "name"] }],
       });
@@ -375,6 +381,11 @@ export const directoryRouter = router({
       if (!vendor) {
         return { vendor: null };
       }
+
+      const rawPhone = vendor.user?.phone || null;
+      const phone = (ctx.session?.userId === vendor.userId || ctx.session?.role === "ADMIN")
+        ? rawPhone
+        : maskPhone(rawPhone);
 
       const vendorData = {
         id: vendor.id,
@@ -391,10 +402,8 @@ export const directoryRouter = router({
         ratingAvg: vendor.ratingAvg,
         ratingCount: vendor.ratingCount,
         responseTimeMin: vendor.responseTimeMin,
-        phone: vendor.user?.phone || null,
+        phone,
       };
-
-      await setCache(cacheKey, vendorData, CACHE_TTLS.VENDOR_PROFILE);
 
       return {
         vendor: vendorData,

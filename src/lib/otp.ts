@@ -194,9 +194,7 @@ export async function sendOtp(phone: string): Promise<{ success: boolean; messag
 
   return {
     success: true,
-    message: process.env.SMS_PROVIDER_API_KEY
-      ? "OTP sent successfully"
-      : `OTP sent (dev mode). Check server console. Use code: ${otp}`,
+    message: "OTP sent successfully. Please check your phone for the verification code.",
   };
 }
 

@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { User } from "@/lib/models";
 import { hashPassword } from "@/lib/auth-crypto";
 import { createNotification } from "./notifications";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { Op } from "sequelize";
 
 export const authRouter = router({
@@ -21,6 +22,16 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      // Rate limiting: max 5 registrations per hour per email/phone
+      const emailLimit = await checkRateLimit(`rate:auth:register:${input.email.toLowerCase()}`, 5, 3600);
+      const phoneLimit = await checkRateLimit(`rate:auth:register:${input.phone}`, 5, 3600);
+
+      if (!emailLimit.allowed || !phoneLimit.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many registration attempts. Please try again later.",
+        });
+      }
       // Check if email already exists
       const existingUser = await User.findOne({ where: { email: input.email } });
       if (existingUser) {
