@@ -115,14 +115,39 @@ export default function VendorDashboardPage() {
   const handleCreateDeal = async (e: React.FormEvent) => {
     e.preventDefault();
     setDealError("");
-    if (!dealTitle.trim() || !dealDesc.trim()) {
-      setDealError("Title and description are required.");
+
+    const cleanTitle = dealTitle.trim();
+    const cleanDesc = dealDesc.trim();
+
+    if (cleanTitle.length < 2) {
+      setDealError("Deal title must be at least 2 characters long.");
       return;
     }
+    if (cleanTitle.length > 100) {
+      setDealError("Deal title cannot exceed 100 characters.");
+      return;
+    }
+    if (cleanDesc.length < 5) {
+      setDealError("Deal description must be at least 5 characters long.");
+      return;
+    }
+    if (cleanDesc.length > 500) {
+      setDealError("Deal description cannot exceed 500 characters.");
+      return;
+    }
+    if (dealDiscount < 1 || dealDiscount > 100) {
+      setDealError("Discount percentage must be between 1% and 100%.");
+      return;
+    }
+    if (dealDuration < 1 || dealDuration > 168) {
+      setDealError("Deal duration must be between 1 hour and 168 hours (7 days).");
+      return;
+    }
+
     try {
       await createDealMutation.mutateAsync({
-        title: dealTitle.trim(),
-        description: dealDesc.trim(),
+        title: cleanTitle,
+        description: cleanDesc,
         discountPercent: dealDiscount,
         durationHours: dealDuration,
       });

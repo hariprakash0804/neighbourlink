@@ -170,14 +170,27 @@ export function LocationModal({ isOpen, onClose, onLocationSet }: LocationModalP
   const handleSaveAndUse = useCallback(async () => {
     if (!detectedLocation) return;
 
-    const label = selectedLabel === "Other" ? customLabel || "Other" : selectedLabel;
+    const rawLabel = selectedLabel === "Other" ? customLabel.trim() || "Other" : selectedLabel.trim();
+    if (!rawLabel || rawLabel.length < 1) {
+      setError("Please provide a name or label for this location.");
+      return;
+    }
+    if (rawLabel.length > 50) {
+      setError("Location label cannot exceed 50 characters.");
+      return;
+    }
+
+    if (radius < 500 || radius > 5000) {
+      setError("Radius must be between 500m and 5000m.");
+      return;
+    }
 
     try {
       await saveAddressMutation.mutateAsync({
-        label,
+        label: rawLabel,
         lat: detectedLocation.lat,
         lng: detectedLocation.lng,
-        pincode: detectedLocation.pincode || "000000",
+        pincode: detectedLocation.pincode || "560001",
         radiusMeters: radius,
       });
 

@@ -51,10 +51,19 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     }
   }, [isOpen]);
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[6-9]\d{9}$/;
+
   const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !password) {
       setError("Please fill in all fields.");
+      return;
+    }
+
+    if (!emailRegex.test(cleanEmail)) {
+      setError("Please enter a valid email address.");
       return;
     }
 
@@ -63,7 +72,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
     try {
       const result = await signIn("credentials", {
-        email,
+        email: cleanEmail,
         password,
         redirect: false,
       });
@@ -86,8 +95,27 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
   const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !phone || !password) {
-      setError("Please fill in all fields.");
+    const cleanName = name.trim();
+    const cleanEmail = email.trim();
+    const cleanPhone = phone.replace(/\D/g, "");
+
+    if (!cleanName || !cleanEmail || !cleanPhone || !password) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    if (cleanName.length < 2) {
+      setError("Full Name must be at least 2 characters.");
+      return;
+    }
+
+    if (!emailRegex.test(cleanEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (!phoneRegex.test(cleanPhone)) {
+      setError("Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).");
       return;
     }
 
@@ -101,17 +129,17 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
     try {
       const registerRes = await registerMutation.mutateAsync({
-        email,
+        email: cleanEmail,
         password,
-        name,
-        phone,
+        name: cleanName,
+        phone: cleanPhone,
         role,
       });
 
       if (registerRes.success) {
         // Automatically sign in after successful registration
         const signInRes = await signIn("credentials", {
-          email,
+          email: cleanEmail,
           password,
           redirect: false,
         });

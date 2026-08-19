@@ -191,12 +191,19 @@ export default function AdminEssentialPage() {
     e.preventDefault();
     setFormError("");
 
-    if (!name.trim()) {
-      setFormError("Service name is required.");
+    const cleanName = name.trim();
+    const cleanPhone = phone.trim();
+
+    if (cleanName.length < 2) {
+      setFormError("Service name must be at least 2 characters long.");
       return;
     }
-    if (!phone.trim()) {
-      setFormError("Contact number is required.");
+    if (cleanName.length > 100) {
+      setFormError("Service name cannot exceed 100 characters.");
+      return;
+    }
+    if (cleanPhone.length < 3) {
+      setFormError("Please provide a valid contact number or helpline.");
       return;
     }
 

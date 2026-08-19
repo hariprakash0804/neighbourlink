@@ -14,10 +14,13 @@ export const authRouter = router({
   register: publicProcedure
     .input(
       z.object({
-        email: z.string().email("Invalid email address"),
-        password: z.string().min(6, "Password must be at least 6 characters"),
-        name: z.string().min(2, "Name must be at least 2 characters"),
-        phone: z.string().min(10, "Phone number must be at least 10 digits").max(15, "Phone number is too long"),
+        email: z.string().trim().email("Invalid email address"),
+        password: z.string().min(6, "Password must be at least 6 characters").max(100, "Password is too long"),
+        name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name cannot exceed 100 characters"),
+        phone: z
+          .string()
+          .trim()
+          .regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian mobile number"),
         role: z.enum(["RESIDENT", "VENDOR"]).default("RESIDENT"),
       })
     )

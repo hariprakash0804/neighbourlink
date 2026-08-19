@@ -460,11 +460,15 @@ function VendorDetailContent() {
                     <textarea
                       value={reportReason}
                       onChange={(e) => setReportReason(e.target.value)}
-                      placeholder="Specify your reason..."
+                      placeholder="Specify your reason (minimum 10 characters)..."
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-destructive/50 resize-none"
                       rows={3}
                       maxLength={1000}
                     />
+                    <div className="flex justify-between items-center text-[10px] text-text-muted">
+                      <span>{reportReason.trim().length < 10 ? `Enter at least ${10 - reportReason.trim().length} more characters` : "Minimum requirement met"}</span>
+                      <span>{reportReason.length}/1000</span>
+                    </div>
 
                     {submitReport.error && (
                       <p className="text-xs text-red-400">{submitReport.error.message}</p>

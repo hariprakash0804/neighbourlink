@@ -111,26 +111,43 @@ export default function ProfilePage() {
     }
   }, [vendorProfile]);
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleVendorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setVendorError("");
 
     if (!vendorProfile?.id) return;
 
-    if (businessName.trim().length < 2) {
+    const cleanBusinessName = businessName.trim();
+    if (cleanBusinessName.length < 2) {
       setVendorError("Business Name must be at least 2 characters long.");
+      return;
+    }
+    if (cleanBusinessName.length > 100) {
+      setVendorError("Business Name cannot exceed 100 characters.");
+      return;
+    }
+
+    if (isNaN(priceRate) || priceRate < 0) {
+      setVendorError("Please enter a valid pricing rate.");
+      return;
+    }
+
+    if (!openTime.trim() || !closeTime.trim()) {
+      setVendorError("Please specify valid opening and closing times.");
       return;
     }
 
     try {
       await updateVendorMutation.mutateAsync({
         vendorId: vendorProfile.id,
-        businessName: businessName.trim(),
+        businessName: cleanBusinessName,
         description: description.trim() || undefined,
         priceInfo: {
           rate: Number(priceRate),
           unit: priceUnit,
-          details: priceDetails.trim(),
+          details: priceDetails.trim() || undefined,
         },
         workingHours: {
           open: openTime.trim(),
@@ -161,15 +178,27 @@ export default function ProfilePage() {
     e.preventDefault();
     setValidationError("");
 
-    if (name.trim().length < 2) {
+    const cleanName = name.trim();
+    const cleanEmail = email.trim();
+
+    if (cleanName.length < 2) {
       setValidationError("Name must be at least 2 characters long.");
+      return;
+    }
+    if (cleanName.length > 100) {
+      setValidationError("Name cannot exceed 100 characters.");
+      return;
+    }
+
+    if (cleanEmail && !emailRegex.test(cleanEmail)) {
+      setValidationError("Please enter a valid email address.");
       return;
     }
 
     try {
       await updateProfileMutation.mutateAsync({
-        name: name.trim(),
-        email: email.trim() || undefined,
+        name: cleanName,
+        email: cleanEmail || undefined,
       });
     } catch (err: any) {
       setValidationError(err.message || "Failed to update profile.");

@@ -65,14 +65,34 @@ function DirectoryContent() {
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bookingVendor || !bookingDate || !bookingTime) return;
+    if (!bookingVendor) return;
+
+    if (!bookingDate || !bookingTime) {
+      toast.error("Please select both an appointment date and preferred time.");
+      return;
+    }
+
+    const slotStart = new Date(`${bookingDate}T${bookingTime}:00`);
+    if (isNaN(slotStart.getTime())) {
+      toast.error("Invalid appointment date or time.");
+      return;
+    }
+
+    if (slotStart.getTime() < Date.now()) {
+      toast.error("Appointment time cannot be in the past. Please select a future time slot.");
+      return;
+    }
+
+    if (bookingNotes.length > 500) {
+      toast.error("Job description notes cannot exceed 500 characters.");
+      return;
+    }
 
     try {
-      const slotStart = new Date(`${bookingDate}T${bookingTime}:00`);
       await createBooking.mutateAsync({
         vendorId: bookingVendor.id,
         slotStart: slotStart.toISOString(),
-        notes: bookingNotes,
+        notes: bookingNotes.trim() || undefined,
       });
       toast.success("Booking request sent successfully!", "The vendor will review and accept your booking.");
       setBookingSuccess(true);

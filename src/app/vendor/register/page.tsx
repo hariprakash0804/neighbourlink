@@ -94,6 +94,23 @@ export default function VendorRegisterPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setError(null);
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("File size exceeds the 5MB limit. Please upload a smaller image.");
+      e.target.value = "";
+      return;
+    }
+
+    // Validate MIME type
+    const validMimes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!validMimes.includes(file.type.toLowerCase())) {
+      setError("Invalid file format. Please upload a JPEG, PNG, WebP, or GIF image.");
+      e.target.value = "";
+      return;
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = (reader.result as string).split(",")[1];
@@ -114,14 +131,33 @@ export default function VendorRegisterPage() {
   const handleNext = () => {
     setError(null);
     if (step === 1) {
-      if (!businessName.trim() || !category) {
-        setError("Please enter a business name and select a service category.");
+      const cleanName = businessName.trim();
+      if (!cleanName) {
+        setError("Please enter your business or shop name.");
+        return;
+      }
+      if (cleanName.length < 2) {
+        setError("Business name must be at least 2 characters.");
+        return;
+      }
+      if (cleanName.length > 100) {
+        setError("Business name cannot exceed 100 characters.");
+        return;
+      }
+      if (!category) {
+        setError("Please select a service category.");
+        return;
+      }
+    }
+    if (step === 2) {
+      if (radius < 500 || radius > 20000) {
+        setError("Service radius must be between 500 meters and 20 kilometers.");
         return;
       }
     }
     if (step === 3) {
       if (!docFile) {
-        setError("Please upload an identity proof document.");
+        setError("Please upload an identity proof document for verification.");
         return;
       }
     }
@@ -135,25 +171,42 @@ export default function VendorRegisterPage() {
 
   const handleSubmit = async () => {
     setError(null);
+
+    // Validate step 4 inputs before submitting
+    if (priceRate < 0 || isNaN(priceRate)) {
+      setError("Please enter a valid non-negative pricing rate.");
+      return;
+    }
+
+    if (!openTime.trim() || !closeTime.trim()) {
+      setError("Please specify both opening and closing times.");
+      return;
+    }
+
+    if (upiId.trim() && !/^[\w.-]+@[\w.-]+$/.test(upiId.trim())) {
+      setError("Please enter a valid UPI ID (e.g. yourname@okaxis or 9876543210@paytm).");
+      return;
+    }
+
     setLoading(true);
 
     try {
       // 1. Submit Registration details
       const regResult = await registerMutation.mutateAsync({
         category,
-        businessName,
-        description,
+        businessName: businessName.trim(),
+        description: description.trim() || undefined,
         lat,
         lng,
         serviceRadiusM: radius,
         priceInfo: {
           rate: priceRate,
           unit: priceUnit,
-          details: priceDetails,
+          details: priceDetails.trim() || undefined,
         },
         workingHours: {
-          open: openTime,
-          close: closeTime,
+          open: openTime.trim(),
+          close: closeTime.trim(),
         },
       });
 

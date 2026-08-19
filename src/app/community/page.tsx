@@ -300,27 +300,73 @@ export default function CommunityHubPage() {
 
     try {
       if (activeTab === "bulletin") {
+        const cleanTitle = title.trim();
+        const cleanContent = content.trim();
+        if (cleanTitle.length < 3) {
+          toast.error("Title must be at least 3 characters long.");
+          return;
+        }
+        if (cleanContent.length < 5) {
+          toast.error("Content must be at least 5 characters long.");
+          return;
+        }
+
         await createBulletin.mutateAsync({
           category: (category || "GENERAL") as any,
-          title,
-          content,
+          title: cleanTitle,
+          content: cleanContent,
           photoUrl: uploadedUrl || undefined,
           lat: userLocation.lat,
           lng: userLocation.lng,
         });
       } else if (activeTab === "civic") {
+        const cleanDesc = content.trim();
+        if (cleanDesc.length < 5) {
+          toast.error("Issue description must be at least 5 characters long.");
+          return;
+        }
+
         await createCivic.mutateAsync({
           category: category || "Other",
-          description: content,
+          description: cleanDesc,
           photoUrl: uploadedUrl || undefined,
           lat: userLocation.lat,
           lng: userLocation.lng,
         });
       } else if (activeTab === "events") {
+        const cleanTitle = title.trim();
+        const cleanVenue = venue.trim();
+        const cleanDesc = content.trim();
+
+        if (cleanTitle.length < 3) {
+          toast.error("Event title must be at least 3 characters long.");
+          return;
+        }
+        if (cleanVenue.length < 2) {
+          toast.error("Event venue must be at least 2 characters long.");
+          return;
+        }
+        if (!startDate || isNaN(new Date(startDate).getTime())) {
+          toast.error("Please select a valid event start date and time.");
+          return;
+        }
+        if (new Date(startDate).getTime() < Date.now() - 5 * 60 * 1000) {
+          toast.error("Event start time cannot be in the past.");
+          return;
+        }
+        if (endDate && new Date(endDate) <= new Date(startDate)) {
+          toast.error("Event end time must be after the start time.");
+          return;
+        }
+        if (cleanDesc.length < 5) {
+          toast.error("Event description must be at least 5 characters long.");
+          return;
+        }
+
         await createEvent.mutateAsync({
-          title,
-          description: content,
-          venue,
+          title: cleanTitle,
+          description: cleanDesc,
+          venue: cleanVenue,
           category: (category || "OTHER") as any,
           startDate: new Date(startDate).toISOString(),
           endDate: endDate ? new Date(endDate).toISOString() : undefined,
@@ -329,25 +375,78 @@ export default function CommunityHubPage() {
           lng: userLocation.lng,
         });
       } else if (activeTab === "carpool") {
+        const cleanOrigin = origin.trim();
+        const cleanDest = destination.trim();
+
+        if (cleanOrigin.length < 2) {
+          toast.error("Origin location must be at least 2 characters long.");
+          return;
+        }
+        if (cleanDest.length < 2) {
+          toast.error("Destination must be at least 2 characters long.");
+          return;
+        }
+        if (!departureTime || isNaN(new Date(departureTime).getTime())) {
+          toast.error("Please select a valid departure date and time.");
+          return;
+        }
+        if (new Date(departureTime).getTime() < Date.now()) {
+          toast.error("Departure date and time cannot be in the past.");
+          return;
+        }
+        if (seatsAvailable < 1 || seatsAvailable > 10) {
+          toast.error("Seats available must be between 1 and 10.");
+          return;
+        }
+        if (pricePerSeat < 0) {
+          toast.error("Price per seat cannot be negative.");
+          return;
+        }
+
         await createCarpool.mutateAsync({
-          origin,
-          destination,
+          origin: cleanOrigin,
+          destination: cleanDest,
           departureTime: new Date(departureTime).toISOString(),
           seatsAvailable,
           pricePerSeat,
           lat: userLocation.lat,
           lng: userLocation.lng,
-          notes: content || undefined,
+          notes: content.trim() || undefined,
         });
       } else if (activeTab === "jobs") {
+        const cleanTitle = title.trim();
+        const cleanDesc = content.trim();
+        const cleanPhone = phone.replace(/\D/g, "");
+
+        if (cleanTitle.length < 3) {
+          toast.error("Job title must be at least 3 characters long.");
+          return;
+        }
+        if (!category) {
+          toast.error("Please select a job category.");
+          return;
+        }
+        if (compensation < 0) {
+          toast.error("Compensation cannot be negative.");
+          return;
+        }
+        if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+          toast.error("Please enter a valid 10-digit Indian mobile number for contact.");
+          return;
+        }
+        if (cleanDesc.length < 5) {
+          toast.error("Job description must be at least 5 characters long.");
+          return;
+        }
+
         await createJob.mutateAsync({
-          title,
-          description: content,
+          title: cleanTitle,
+          description: cleanDesc,
           category: (category || "OTHER") as any,
           compensation,
           lat: userLocation.lat,
           lng: userLocation.lng,
-          phone,
+          phone: cleanPhone,
         });
       }
     } catch (err) {
