@@ -177,7 +177,7 @@ export const directoryRouter = router({
         availableNow: z.boolean().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const cacheKey = `cache:search:${JSON.stringify(input)}`;
       const cached = await getCache<any>(cacheKey);
       if (cached) return { ...cached, provider: "cache" };
