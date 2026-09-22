@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { User as UserModel } from "../lib/models.js";
 import { hashPassword, verifyPassword } from "../lib/auth-crypto.js";
 import { ensureDbSync } from "../lib/db.js";
-import { signJwt, verifyJwt } from "../trpc.js";
+import { signJwt, verifyJwt } from "../lib/jwt.js";
 import { checkRateLimit } from "../lib/rate-limit.js";
 
 /**

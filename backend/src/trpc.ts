@@ -1,70 +1,9 @@
 import { initTRPC, TRPCError } from "@trpc/server";
-import type { CreateFastifyContextOptions } from "@trpc/server/adapters/fastify";
-import jwt from "jsonwebtoken";
-import sequelize, { ensureDbSync } from "./lib/db.js";
+import type { Context } from "./context.js";
 import { checkRateLimit } from "./lib/rate-limit.js";
 import { logger } from "./lib/logger.js";
 
-// ─── JWT Configuration ──────────────────────────────────────────────────────
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  process.env.AUTH_SECRET ||
-  "fallback_dev_jwt_secret_32_chars_long_!!";
-
-if (
-  process.env.NODE_ENV === "production" &&
-  (!process.env.JWT_SECRET && !process.env.AUTH_SECRET)
-) {
-  throw new Error(
-    "❌ FATAL: JWT_SECRET or AUTH_SECRET must be set in production. " +
-      "Generate one with: openssl rand -base64 32"
-  );
-}
-
-export interface JwtPayload {
-  userId: string;
-  email: string;
-  phone?: string | null;
-  role: string;
-  name?: string | null;
-}
-
-export function signJwt(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
-}
-
-export function verifyJwt(token: string): JwtPayload | null {
-  try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Context — available in every tRPC procedure.
- * Extracts JWT from Authorization header instead of NextAuth session.
- */
-export async function createContext({ req }: CreateFastifyContextOptions) {
-  // Ensure DB tables exist (no-op after first call)
-  await ensureDbSync();
-
-  let session: JwtPayload | null = null;
-
-  const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    session = verifyJwt(token);
-  }
-
-  return {
-    db: sequelize,
-    session,
-    headers: req.headers,
-  };
-}
-
-export type Context = Awaited<ReturnType<typeof createContext>>;
+export type { Context };
 
 /**
  * tRPC initialization
@@ -169,21 +108,6 @@ export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
 
 /**
  * Rate-limited protected procedure factory.
- *
- * Creates a procedure that requires authentication AND enforces per-user
- * rate limiting using the Redis-backed rate limiter.
- *
- * @param keyPrefix - Unique prefix for the rate limit key (e.g., "chat:send")
- * @param limit - Max requests allowed in the window
- * @param windowSecs - Time window in seconds
- *
- * @example
- * ```ts
- * // Max 30 messages per minute per user
- * rateLimitedProcedure("chat:send", 30, 60)
- *   .input(z.object({ ... }))
- *   .mutation(async ({ input, ctx }) => { ... });
- * ```
  */
 export function rateLimitedProcedure(
   keyPrefix: string,

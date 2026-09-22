@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { uploadFile } from "../lib/storage.js";
-import { verifyJwt } from "../trpc.js";
+import { verifyJwt } from "../lib/jwt.js";
 import { checkRateLimit } from "../lib/rate-limit.js";
 
 /**

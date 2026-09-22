@@ -3,7 +3,7 @@ import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import { fastifyTRPCPlugin } from "@trpc/server/adapters/fastify";
 import { appRouter } from "./routers/_app.js";
-import { createContext } from "./trpc.js";
+import { createContext } from "./context.js";
 import { authRoutes } from "./routes/auth.js";
 import { uploadRoutes } from "./routes/upload.js";
 import { healthRoutes } from "./routes/health.js";
