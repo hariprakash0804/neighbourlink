@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactCompiler: true,
+  serverExternalPackages: ["mysql2", "sequelize"],
 
   // Security Headers configuration
   async headers() {
