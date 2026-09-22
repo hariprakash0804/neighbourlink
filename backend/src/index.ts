@@ -17,7 +17,9 @@ async function buildServer() {
     logger: {
       level: process.env.NODE_ENV === "production" ? "info" : "debug",
     },
-    maxParamLength: 5000,
+    routerOptions: {
+      maxParamLength: 5000,
+    },
   });
 
   // ─── CORS ──────────────────────────────────────────────────────────────────

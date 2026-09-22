@@ -1,24 +1,38 @@
 import { Sequelize } from "sequelize";
 import mysql2 from "mysql2";
 
-// Force trigger redeployment to Vercel
+const isProduction = process.env.NODE_ENV === "production";
+const dbHost = process.env.DB_HOST || "localhost";
+
+// Automatically enable SSL for cloud providers (TiDB Cloud, AWS RDS, Aiven, etc.) or when DB_SSL=true
+const useSsl =
+  process.env.DB_SSL === "true" ||
+  dbHost.includes("tidbcloud.com") ||
+  dbHost.includes("aivencloud.com") ||
+  dbHost.includes("rds.amazonaws.com") ||
+  dbHost.includes("neon.tech");
+
 const sequelize = new Sequelize(
   process.env.DB_NAME || "neighborlink",
   process.env.DB_USER || "root",
   process.env.DB_PASSWORD || "password",
   {
-    host: process.env.DB_HOST || "localhost",
+    host: dbHost,
     port: parseInt(process.env.DB_PORT || "3306", 10),
     dialect: "mysql",
     dialectModule: mysql2,
-    dialectOptions: process.env.DB_SSL === "true" ? {
-      ssl: {
-        rejectUnauthorized: true,
-      }
-    } : undefined,
+    dialectOptions: useSsl
+      ? {
+          ssl: {
+            minVersion: "TLSv1.2",
+            rejectUnauthorized:
+              process.env.DB_SSL_REJECT_UNAUTHORIZED === "false" ? false : true,
+          },
+        }
+      : undefined,
     logging: process.env.NODE_ENV === "development" ? console.log : false,
     pool: {
-      max: 10,
+      max: isProduction ? 10 : 5,
       min: 0,
       acquire: 30000,
       idle: 10000,
@@ -42,24 +56,31 @@ export async function ensureDbSync() {
     syncPromise = (async () => {
       try {
         console.log("ℹ️ Server connecting to DB:", {
-          host: process.env.DB_HOST,
-          port: process.env.DB_PORT,
-          database: process.env.DB_NAME,
+          host: dbHost,
+          port: process.env.DB_PORT || "3306",
+          database: process.env.DB_NAME || "neighborlink",
           user: process.env.DB_USER,
-          ssl: process.env.DB_SSL
+          ssl: useSsl ? "enabled (TLSv1.2)" : "disabled",
         });
+
         // Import models to ensure they're registered before sync
         await import("./models.js");
         await sequelize.sync({ alter: process.env.NODE_ENV === "development" });
         console.log("✅ Database synced successfully");
 
-        // Seed sample data if table is empty
-        const { seedEssentialServices } = await import("./seed");
-        await seedEssentialServices();
+        // Seed sample data if table is empty (dev only)
+        if (process.env.NODE_ENV !== "production") {
+          try {
+            const { seedEssentialServices } = await import("./seed.js");
+            await seedEssentialServices();
+          } catch (seedErr) {
+            console.warn("⚠️ Seed failed or skipped:", seedErr);
+          }
+        }
 
         // Initialize BullMQ review queue (non-blocking)
         try {
-          const { initReviewQueue } = await import("./queue");
+          const { initReviewQueue } = await import("./queue.js");
           initReviewQueue();
         } catch (queueErr) {
           console.warn("⚠️ BullMQ queue initialization skipped:", queueErr);
