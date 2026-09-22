@@ -16,5 +16,11 @@
     "start:frontend": "npm run start --workspace=frontend",
     "lint:backend": "npm run lint --workspace=backend",
     "lint:frontend": "npm run lint --workspace=frontend"
+  },
+  "overrides": {
+    "uuid": "^11.1.1",
+    "esbuild": "^0.28.1",
+    "postcss": "^8.5.23",
+    "sharp": "^0.35.5"
   }
 }
