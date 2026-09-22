@@ -1,12 +1,21 @@
 import { initTRPC, TRPCError } from "@trpc/server";
-import type { Context } from "./context.js";
-import { checkRateLimit } from "./lib/rate-limit.js";
-import { logger } from "./lib/logger.js";
 
-export type { Context };
+export interface JwtSession {
+  userId: string;
+  email: string;
+  phone?: string | null;
+  role: string;
+  name?: string | null;
+}
+
+export interface Context {
+  db: any;
+  session: JwtSession | null;
+  headers: Record<string, string | string[] | undefined>;
+}
 
 /**
- * tRPC initialization
+ * tRPC initialization — pure definitions with zero runtime server dependencies
  */
 const t = initTRPC.context<Context>().create({
   errorFormatter({ shape, error }) {
@@ -34,26 +43,16 @@ const loggingMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
     const result = await next();
     const duration = Date.now() - start;
     if (result.ok) {
-      logger.info(`tRPC request: [${type}] ${path} - SUCCESS`, {
-        actor,
-        durationMs: duration,
-      });
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`[tRPC] [${type}] ${path} - SUCCESS (${duration}ms) - ${actor}`);
+      }
     } else {
-      logger.error(`tRPC request: [${type}] ${path} - ERROR`, {
-        actor,
-        durationMs: duration,
-        error: result.error.message,
-        code: result.error.code,
-      });
+      console.error(`[tRPC] [${type}] ${path} - ERROR (${duration}ms) - ${actor}:`, result.error.message);
     }
     return result;
   } catch (error: any) {
     const duration = Date.now() - start;
-    logger.error(`tRPC request: [${type}] ${path} - CRASH`, {
-      actor,
-      durationMs: duration,
-      error: error.message || error,
-    });
+    console.error(`[tRPC] [${type}] ${path} - CRASH (${duration}ms) - ${actor}:`, error.message || error);
     throw error;
   }
 });
@@ -108,6 +107,7 @@ export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
 
 /**
  * Rate-limited protected procedure factory.
+ * Lazily loads rate-limiting to avoid static import chains.
  */
 export function rateLimitedProcedure(
   keyPrefix: string,
@@ -115,6 +115,7 @@ export function rateLimitedProcedure(
   windowSecs: number
 ) {
   return protectedProcedure.use(async ({ ctx, next }) => {
+    const { checkRateLimit } = await import("./lib/rate-limit.js");
     const rateLimitKey = `rate:${keyPrefix}:${ctx.session.userId}`;
     const result = await checkRateLimit(rateLimitKey, limit, windowSecs);
 
