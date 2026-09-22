@@ -354,6 +354,29 @@ const vendorsToSeed: SeedVendor[] = [
 ];
 
 /**
+ * Seed admin user — runs in ALL environments (idempotent).
+ */
+export async function seedAdminUser() {
+  const adminExists = await User.findOne({ where: { role: "ADMIN" } });
+  if (!adminExists) {
+    const adminPhone = process.env.ADMIN_PHONE || "+919999999999";
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@neighbourlink.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    await User.create({
+      phone: adminPhone,
+      name: "Admin",
+      email: adminEmail,
+      passwordHash: hashPassword(adminPassword),
+      role: "ADMIN",
+    });
+    console.log(`✅ Admin user seeded (phone: ${adminPhone}, email: ${adminEmail})`);
+  } else {
+    console.log("ℹ️ Admin user already exists. Skipping seed.");
+  }
+}
+
+/**
  * Seed all sample data (Essential Services + Users + Vendors) and sync to Meilisearch index.
  */
 export async function seedEssentialServices() {
@@ -368,26 +391,7 @@ export async function seedEssentialServices() {
       console.log(`ℹ️ EssentialService table already has ${serviceCount} records. Skipping seed.`);
     }
 
-    // 2. Seed Admin User
-    const adminExists = await User.findOne({ where: { role: "ADMIN" } });
-    if (!adminExists) {
-      const adminPhone = process.env.ADMIN_PHONE || "+919999999999";
-      const adminEmail = process.env.ADMIN_EMAIL || "admin@neighbourlink.com";
-      const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-
-      await User.create({
-        phone: adminPhone,
-        name: "Admin",
-        email: adminEmail,
-        passwordHash: hashPassword(adminPassword),
-        role: "ADMIN",
-      });
-      console.log(`✅ Admin user seeded (phone: ${adminPhone}, email: ${adminEmail})`);
-    } else {
-      console.log("ℹ️ Admin user already exists. Skipping seed.");
-    }
-
-    // 3. Seed Vendors & Users
+    // 2. Seed Vendors & Users
     const vendorCount = await Vendor.count();
     if (vendorCount === 0) {
       console.log("🌱 Seeding Vendor & User profiles...");

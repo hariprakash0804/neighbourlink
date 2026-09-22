@@ -61,6 +61,14 @@ export async function ensureDbSync() {
         await sequelize.sync({ alter: process.env.NODE_ENV === "development" });
         console.log("✅ Database synced successfully");
 
+        // Seed admin user in all environments (idempotent — skips if exists)
+        try {
+          const { seedAdminUser } = await import("./seed.js");
+          await seedAdminUser();
+        } catch (adminSeedErr) {
+          console.warn("⚠️ Admin seed failed or skipped:", adminSeedErr);
+        }
+
         // Seed sample data if table is empty (dev only)
         if (process.env.NODE_ENV !== "production") {
           try {
