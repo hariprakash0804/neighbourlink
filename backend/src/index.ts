@@ -62,6 +62,11 @@ async function buildServer() {
   // ─── Database sync ─────────────────────────────────────────────────────────
   await ensureDbSync();
 
+  // ─── Root Endpoint ──────────────────────────────────────────────────────────
+  server.get("/", async () => {
+    return { status: "ok", service: "neighbourlink-api" };
+  });
+
   // ─── REST Routes ───────────────────────────────────────────────────────────
   await server.register(authRoutes, { prefix: "/auth" });
   await server.register(uploadRoutes, { prefix: "/upload" });
